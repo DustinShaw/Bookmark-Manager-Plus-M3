@@ -1,3 +1,32 @@
+## 修改后最终状态（Bookmark Manager Plus M3）
+
+### 已实现并保留的功能
+| # | 功能 | 关键实现 |
+|---|------|----------|
+| 1 | **搜索状态自动恢复** | 重开 popup 恢复 `lastQuery` 并重跑搜索；`searchActive` 保留无查询的过滤视图 |
+| 2 | **选项持久化一并应用** | 搜索模式/排序/文件文件夹可见性/日期范围本就持久化，重跑时连带生效 |
+| 3 | **搜索结果滚动位置记忆** | `lastSearchScroll` 持久化；恢复时还原、新搜索重置为 0；scroll 监听仅 Search 模式回写 |
+| 4 | **历史单条删除** | 每条右侧 × 按钮（`stopPropagation` 防误搜），删后从 DOM 重建 `history` 数组并持久化 |
+| 5 | **清空历史按钮** | 历史下拉 footer 的 🗑 按钮，删空自动收起 |
+| 6 | **聚焦自动全选** | 打开 popup 即 `$searchEditor.focus()` + `select()`（setTimeout 避开 mouseup） |
+| 7 | **加高输入框** | 高度 16→24px，字号 12→13px |
+| 8 | **打开即聚焦全选** | 恢复块末尾触发，已恢复的关键词直接整段选中 |
+
+### 界面/加载优化
+- **横线随输入框下移**：`#header-panel` 改 `height:auto; min-height:22px; display:flow-root`（修掉写死高度导致横线不随搜索盒下移）
+- **图标以输入框中线垂直居中**：三个图标容器设为 24px 高 + `inline-flex` 居中；统一 `.fa-basic` 尺寸（去 `!important` 1.1em 吹大）
+- **全选背景浅灰**：`::selection` 由深蓝改为 `#cdd3da` 浅灰底 + 深字（明暗主题均清晰）
+- **加载提速**：popup/options 全部 `<script defer>`；options 页移除 248KB jquery-ui；alertify 换 min 版；删除未用 `picker.time.js`
+- **主题滚动条 + 选区颜色**：补齐 `::-webkit-scrollbar` 与 `::selection`（之前变量定义未使用）
+
+### 已回滚
+- **文件夹「📁 文件夹」徽章**：用户判定多此一举，已完全回滚（`result-folder-badge` 无残留）
+
+### 验证
+- 所有 JS 改动均通过 `node --check`
+- 改动需到 `chrome://extensions` 点 ⟳ 重载扩展才生效
+
+需要我导出一份完整的改动清单文件，还是这样就好？
 <div align="center">
 <img src="./icon/icon128.png" alt="Bookmark Manager Plus M3 icon" width="96" height="96" />
 <h1>Bookmark Manager Plus M3</h1>
