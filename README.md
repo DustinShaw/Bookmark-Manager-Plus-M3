@@ -19,14 +19,6 @@
 - **加载提速**：popup/options 全部 `<script defer>`；options 页移除 248KB jquery-ui；alertify 换 min 版；删除未用 `picker.time.js`
 - **主题滚动条 + 选区颜色**：补齐 `::-webkit-scrollbar` 与 `::selection`（之前变量定义未使用）
 
-### 已回滚
-- **文件夹「📁 文件夹」徽章**：用户判定多此一举，已完全回滚（`result-folder-badge` 无残留）
-
-### 验证
-- 所有 JS 改动均通过 `node --check`
-- 改动需到 `chrome://extensions` 点 ⟳ 重载扩展才生效
-
-需要我导出一份完整的改动清单文件，还是这样就好？
 <div align="center">
 <img src="./icon/icon128.png" alt="Bookmark Manager Plus M3 icon" width="96" height="96" />
 <h1>Bookmark Manager Plus M3</h1>
