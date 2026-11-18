@@ -1,176 +1,217 @@
 /*------------------------------------------------*/
-/* Modern Theme System with CSS Custom Properties */
+/* Theme System with CSS Custom Properties        */
+/* Neutral, low-chroma palette (2020s desktop UI) */
 /*------------------------------------------------*/
 
-/* Dark Theme (Default) */
+/* Dark Theme (Default). :root keeps the very first paint themed even
+   before init.js writes data-theme="dark". */
 :root,
 html[data-theme="dark"] {
+	color-scheme: dark;
+
 	/* Primary Background Colors */
-	--bg-primary: #1e1e2e;
-	--bg-secondary: #2a2a3e;
-	--bg-tertiary: #363650;
-	--bg-hover: #3d3d57;
-	--bg-active: #4a4a6a;
+	--bg-primary: #14161b;
+	--bg-secondary: #1b1e24;
+	--bg-tertiary: #23272e;
+	--bg-hover: #262b33;
+	--bg-active: #2e343e;
 
 	/* Text Colors */
-	--text-primary: #e0e0e6;
-	--text-secondary: #b4b4c8;
-	--text-tertiary: #8a8a9e;
-	--text-disabled: #5a5a6e;
-	--text-link: #7dd3c0;
-	--text-link-hover: #a8e6d7;
+	--text-primary: #e7e9ee;
+	--text-secondary: #aab1bd;
+	--text-tertiary: #7b8492;
+	--text-disabled: #565e6b;
+	--text-link: #9bafff;
+	--text-link-hover: #c3ceff;
 
 	/* Border Colors */
-	--border-primary: #404056;
-	--border-secondary: #4a4a60;
-	--border-hover: #5a5a70;
-	--border-focus: #6eb6ff;
+	--border-primary: #2a2f38;
+	--border-secondary: #343a45;
+	--border-hover: #454d5a;
+	--border-focus: #8b9cff;
 
 	/* Accent Colors */
-	--accent-primary: #6eb6ff;
-	--accent-secondary: #8b5cf6;
-	--accent-success: #10b981;
-	--accent-warning: #f59e0b;
-	--accent-error: #ef4444;
-	--accent-info: #3b82f6;
+	--accent-primary: #8b9cff;
+	--accent-secondary: #b18cff;
+	--accent-success: #4ade9b;
+	--accent-warning: #f5bf5a;
+	--accent-error: #f27b7b;
+	--accent-info: #6fb6f2;
+
+	/* Accent tints / interaction */
+	--accent-soft: rgba(139, 156, 255, 0.13);
+	--accent-hover: #a0adff;
+	--success-soft: rgba(74, 222, 155, 0.13);
+	--error-soft: rgba(242, 123, 123, 0.13);
+	--warning-soft: rgba(245, 191, 90, 0.14);
+	--focus-ring: rgba(139, 156, 255, 0.22);
 
 	/* Selection Colors */
-	--selection-bg: #3d5a80;
-	--selection-border: #4a6fa5;
-	--selection-text: #ffffff;
+	--selection-bg: rgba(139, 156, 255, 0.26);
+	--selection-border: rgba(139, 156, 255, 0.55);
+	--selection-text: #f2f4ff;
 
 	/* Hover States */
-	--hover-bg: rgba(110, 182, 255, 0.1);
-	--hover-border: rgba(110, 182, 255, 0.3);
+	--hover-bg: rgba(139, 156, 255, 0.09);
+	--hover-border: rgba(139, 156, 255, 0.28);
 
 	/* Shadow Colors */
-	--shadow-sm: rgba(0, 0, 0, 0.3);
-	--shadow-md: rgba(0, 0, 0, 0.4);
-	--shadow-lg: rgba(0, 0, 0, 0.5);
+	--shadow-sm: rgba(0, 0, 0, 0.24);
+	--shadow-md: rgba(0, 0, 0, 0.38);
+	--shadow-lg: rgba(0, 0, 0, 0.55);
 
 	/* Scrollbar Colors */
-	--scrollbar-track: #2a2a3e;
-	--scrollbar-thumb: #4a4a6a;
-	--scrollbar-thumb-hover: #5a5a7a;
+	--scrollbar-track: #191c22;
+	--scrollbar-thumb: #3a414c;
+	--scrollbar-thumb-hover: #4d5764;
 
 	/* Input Colors */
-	--input-bg: #2a2a3e;
-	--input-border: #404056;
-	--input-focus-bg: #363650;
-	--input-focus-border: #6eb6ff;
-	--input-placeholder: #6a6a7e;
+	--input-bg: #1b1e24;
+	--input-border: #323844;
+	--input-focus-bg: #20242c;
+	--input-focus-border: #8b9cff;
+	--input-placeholder: #6d7683;
 
 	/* Button Colors */
-	--button-bg: #3d3d57;
-	--button-border: #4a4a60;
-	--button-hover-bg: #4a4a6a;
-	--button-hover-border: #5a5a70;
-	--button-active-bg: #363650;
+	--button-bg: #23272e;
+	--button-border: #343a45;
+	--button-hover-bg: #2b303a;
+	--button-hover-border: #454d5a;
+	--button-active-bg: #1b1e24;
 
 	/* Modal/Dialog Colors */
-	--modal-overlay: rgba(0, 0, 0, 0.6);
-	--modal-bg: #2a2a3e;
-	--modal-border: #404056;
+	--modal-overlay: rgba(8, 10, 14, 0.62);
+	--modal-bg: #1b1e24;
+	--modal-border: #343a45;
 
 	/* Menu Colors */
-	--menu-bg: #2a2a3e;
-	--menu-border: #404056;
-	--menu-item-hover: #3d3d57;
+	--menu-bg: #1b1e24;
+	--menu-border: #343a45;
+	--menu-item-hover: #262b33;
 
 	/* Group/Separator Colors */
-	--separator-color: #404056;
-	--group-bg: #2a2a3e;
-	--group-border: #363650;
+	--separator-color: #2a2f38;
+	--group-bg: #1b1e24;
+	--group-border: #2a2f38;
 
 	/* Special States */
-	--partial-selected-bg: rgba(110, 182, 255, 0.15);
-	--full-selected-bg: rgba(110, 182, 255, 0.25);
-	--cut-opacity: 0.4;
+	--partial-selected-bg: rgba(139, 156, 255, 0.11);
+	--full-selected-bg: rgba(139, 156, 255, 0.20);
+	--cut-opacity: 0.42;
+	--highlight-bg: rgba(245, 191, 90, 0.24);
+
+	/* Shape / motion / misc */
+	--radius-sm: 6px;
+	--radius-md: 10px;
+	--radius-lg: 14px;
+	--radius-pill: 999px;
+	--ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+	/* RGB triplet used by util.js for the visit-recency fade gradient */
+	--fade-rgb: 139, 156, 255;
 }
 
 /* Light Theme */
 html[data-theme="light"] {
+	color-scheme: light;
+
 	/* Primary Background Colors */
 	--bg-primary: #ffffff;
-	--bg-secondary: #f8f9fa;
-	--bg-tertiary: #e9ecef;
-	--bg-hover: #f1f3f5;
-	--bg-active: #dee2e6;
+	--bg-secondary: #f7f8fa;
+	--bg-tertiary: #eef0f4;
+	--bg-hover: #f1f3f7;
+	--bg-active: #e6e9ef;
 
 	/* Text Colors */
-	--text-primary: #212529;
-	--text-secondary: #495057;
-	--text-tertiary: #6c757d;
-	--text-disabled: #adb5bd;
-	--text-link: #0d6efd;
-	--text-link-hover: #0a58ca;
+	--text-primary: #1c2029;
+	--text-secondary: #525a68;
+	--text-tertiary: #7a8391;
+	--text-disabled: #b3bac5;
+	--text-link: #3f51c4;
+	--text-link-hover: #2d3ba0;
 
 	/* Border Colors */
-	--border-primary: #dee2e6;
-	--border-secondary: #ced4da;
-	--border-hover: #adb5bd;
-	--border-focus: #0d6efd;
+	--border-primary: #e4e7ed;
+	--border-secondary: #d6dae2;
+	--border-hover: #bcc3cf;
+	--border-focus: #3f51c4;
 
 	/* Accent Colors */
-	--accent-primary: #0d6efd;
-	--accent-secondary: #6f42c1;
-	--accent-success: #198754;
-	--accent-warning: #fd7e14;
-	--accent-error: #dc3545;
-	--accent-info: #0dcaf0;
+	--accent-primary: #3f51c4;
+	--accent-secondary: #7a4fd0;
+	--accent-success: #12855b;
+	--accent-warning: #b5720d;
+	--accent-error: #d54545;
+	--accent-info: #1c74b8;
+
+	/* Accent tints / interaction */
+	--accent-soft: rgba(63, 81, 196, 0.09);
+	--accent-hover: #33419f;
+	--success-soft: rgba(18, 133, 91, 0.10);
+	--error-soft: rgba(213, 69, 69, 0.09);
+	--warning-soft: rgba(181, 114, 13, 0.10);
+	--focus-ring: rgba(63, 81, 196, 0.16);
 
 	/* Selection Colors */
-	--selection-bg: #cfe2ff;
-	--selection-border: #9ec5fe;
-	--selection-text: #052c65;
+	--selection-bg: rgba(63, 81, 196, 0.14);
+	--selection-border: rgba(63, 81, 196, 0.36);
+	--selection-text: #1b2350;
 
 	/* Hover States */
-	--hover-bg: rgba(13, 110, 253, 0.08);
-	--hover-border: rgba(13, 110, 253, 0.25);
+	--hover-bg: rgba(63, 81, 196, 0.06);
+	--hover-border: rgba(63, 81, 196, 0.20);
 
 	/* Shadow Colors */
-	--shadow-sm: rgba(0, 0, 0, 0.1);
-	--shadow-md: rgba(0, 0, 0, 0.15);
-	--shadow-lg: rgba(0, 0, 0, 0.2);
+	--shadow-sm: rgba(20, 28, 45, 0.06);
+	--shadow-md: rgba(20, 28, 45, 0.10);
+	--shadow-lg: rgba(20, 28, 45, 0.16);
 
 	/* Scrollbar Colors */
-	--scrollbar-track: #f8f9fa;
-	--scrollbar-thumb: #adb5bd;
-	--scrollbar-thumb-hover: #868e96;
+	--scrollbar-track: #f7f8fa;
+	--scrollbar-thumb: #c8ced8;
+	--scrollbar-thumb-hover: #a9b2bf;
 
 	/* Input Colors */
 	--input-bg: #ffffff;
-	--input-border: #ced4da;
+	--input-border: #d6dae2;
 	--input-focus-bg: #ffffff;
-	--input-focus-border: #0d6efd;
-	--input-placeholder: #6c757d;
+	--input-focus-border: #3f51c4;
+	--input-placeholder: #8b94a2;
 
 	/* Button Colors */
-	--button-bg: #f8f9fa;
-	--button-border: #ced4da;
-	--button-hover-bg: #e9ecef;
-	--button-hover-border: #adb5bd;
-	--button-active-bg: #dee2e6;
+	--button-bg: #f7f8fa;
+	--button-border: #d6dae2;
+	--button-hover-bg: #eef0f4;
+	--button-hover-border: #bcc3cf;
+	--button-active-bg: #e6e9ef;
 
 	/* Modal/Dialog Colors */
-	--modal-overlay: rgba(0, 0, 0, 0.4);
+	--modal-overlay: rgba(20, 28, 45, 0.32);
 	--modal-bg: #ffffff;
-	--modal-border: #dee2e6;
+	--modal-border: #e4e7ed;
 
 	/* Menu Colors */
 	--menu-bg: #ffffff;
-	--menu-border: #dee2e6;
-	--menu-item-hover: #f8f9fa;
+	--menu-border: #e4e7ed;
+	--menu-item-hover: #f3f5f9;
 
 	/* Group/Separator Colors */
-	--separator-color: #dee2e6;
-	--group-bg: #f8f9fa;
-	--group-border: #e9ecef;
+	--separator-color: #e4e7ed;
+	--group-bg: #f7f8fa;
+	--group-border: #e9ecf1;
 
 	/* Special States */
-	--partial-selected-bg: rgba(13, 110, 253, 0.1);
-	--full-selected-bg: rgba(13, 110, 253, 0.2);
-	--cut-opacity: 0.4;
+	--partial-selected-bg: rgba(63, 81, 196, 0.07);
+	--full-selected-bg: rgba(63, 81, 196, 0.13);
+	--cut-opacity: 0.42;
+	--highlight-bg: #fff0bd;
+
+	/* Shape / motion / misc */
+	--radius-sm: 6px;
+	--radius-md: 10px;
+	--radius-lg: 14px;
+	--radius-pill: 999px;
+	--ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+	--fade-rgb: 63, 81, 196;
 }
 
 /* Smooth theme transitions */
@@ -183,4 +224,40 @@ html {
 		border-color 0.2s ease,
 		color 0.2s ease,
 		box-shadow 0.2s ease;
+}
+
+/* ---- Theme-aware scrollbars ----
+   The --scrollbar-* variables were defined per theme but never applied,
+   leaving the default OS scrollbar (white) glaring on the dark theme. */
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+::-webkit-scrollbar-track {
+	background-color: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+	background-color: var(--scrollbar-thumb);
+	border-radius: 5px;
+	border: 2px solid transparent;
+	background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background-color: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-corner {
+	background-color: var(--scrollbar-track);
+}
+
+/* ---- Theme-aware text selection ---- */
+/* Light-gray selection background (was the strong --accent-primary blue,
+   too dark/heavy for the "select all on focus" highlight). Use a fixed
+   light-gray fill with dark text so it stays readable on both themes. */
+::selection {
+	background-color: #cdd3da;
+	color: #212529;
 }

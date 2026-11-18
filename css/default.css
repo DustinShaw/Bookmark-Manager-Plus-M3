@@ -184,6 +184,32 @@ hr {
 
 #search-set>span {
 	color: gray;
+	display: inline-flex;
+	align-items: center;
+	/* Even spacing between icon / input / triggers inside the search box. */
+	gap: 4px;
+	/* Base icon size for the taller 24px input (see the .fa-basic reset
+	   below, which keeps magnifier / plus / chevron uniform). */
+	font-size: 14px;
+}
+
+/* .fa-basic's global "1.1em !important" would blow the magnifier and
+   chevron up relative to the plus icon; normalize within the search box. */
+#search-set .fa-basic {
+	font-size: 1em !important;
+}
+
+/* Make every icon wrapper exactly as tall as the 24px input and center its
+   glyph on the input's horizontal centre line. Relying on the parent flex
+   "align-items: center" alone left the glyphs slightly high because
+   font-awesome glyphs carry asymmetric vertical metrics inside their line box. */
+#search-set #search-icon,
+#search-set .search-extend-trigger,
+#search-set .search-history-trigger {
+	height: 24px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 }
 
 #search-history {
@@ -231,6 +257,72 @@ hr {
 #explore-history li:hover {
 	background-color: var(--accent-primary);
 	color: var(--selection-text);
+}
+
+#search-history .search-history-footer {
+	position: sticky;
+	bottom: 0;
+	border-top: 1px solid var(--border-primary);
+	margin-top: 2px;
+	padding: 3px 2px 1px 2px;
+	background-color: var(--menu-bg);
+}
+
+#search-history .search-history-clear {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 5px;
+	width: 100%;
+	border: 0;
+	background: transparent;
+	color: var(--text-secondary);
+	cursor: pointer;
+	padding: 5px 6px;
+	font-size: 0.82em;
+	border-radius: 4px;
+}
+
+#search-history .search-history-clear:hover {
+	background-color: var(--hover-bg);
+	color: var(--accent-error);
+}
+
+#search-history li {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+#search-history li .search-history-text {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+#search-history li .search-history-del {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	border-radius: 4px;
+	color: var(--text-secondary);
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity 0.12s ease, color 0.12s ease, background-color 0.12s ease;
+}
+
+#search-history li:hover .search-history-del {
+	opacity: 1;
+}
+
+#search-history li .search-history-del:hover {
+	color: var(--accent-error);
+	background-color: var(--hover-bg);
 }
 
 .explore-sibling-top {
@@ -299,15 +391,33 @@ a>span {
 
 
 #result-list li.group {
-	/* margin: 0.3em 0 0.2em 0; */
-
 	display: flex;
-	margin-top: 3px;
-	padding: 0 3px;
-	font-size: 0.8em;
+	align-items: center;
+	position: sticky;
+	top: 0;
+	z-index: 5;
+	margin-top: 6px;
+	margin-bottom: 2px;
+	padding: 4px 26px 4px 8px;
+	font-size: 0.78em;
+	font-weight: 600;
+	color: var(--text-secondary);
+	background-color: var(--group-bg);
+	border: 1px solid var(--group-border);
+	border-left: 3px solid var(--accent-primary);
+	border-radius: 4px;
+	box-shadow: none;
+}
+
+#result-list li.group .group-count {
+	margin-left: auto;
+	padding: 0 7px;
+	font-size: 0.9em;
 	font-weight: normal;
-	border-bottom: solid 1px #EEEEEE;
-	color: #999999;
+	line-height: 1.5;
+	color: var(--text-tertiary);
+	background-color: var(--bg-tertiary);
+	border-radius: 8px;
 }
 
 .menu-item {
@@ -399,6 +509,18 @@ a>span {
 	white-space: nowrap;
 	z-index: 25;
 	border-radius: 6px;
+}
+
+/* Hide overlays from the very first paint: they are only .hide()'n by JS
+   in $(document).ready, which runs AFTER the first paint on a cold start,
+   exposing the context menu, dialogs and windows (fixed by CSS default). */
+.menu,
+.dialog,
+.window,
+#modal-cover,
+#action-hover-toolset,
+#search-history {
+	display: none;
 }
 
 .menu li {
@@ -558,8 +680,46 @@ a>span {
 }
 
 
+#result-list li a {
+	display: flex;
+	align-items: center;
+	padding: 4px 7px;
+	text-decoration: none;
+	color: var(--text-primary);
+	border-radius: 4px;
+}
+
 #result-list a div {
-	display: inline-block;
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+}
+
+#result-list li a .result-icon {
+	flex: 0 0 auto;
+	width: 16px;
+	height: 16px;
+	border-radius: 3px;
+}
+
+#result-list li a span {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Soft, theme-aware highlight for matched query terms (replaces the
+   old harsh inline red text). Uses a calm background pill only. */
+.result-hit {
+	background-color: var(--highlight-bg);
+	border-radius: 2px;
+	font-weight: 600;
+	padding: 0 1px;
 }
 
 /* 폴더에서 드래그를 인식하는 영역 */
@@ -627,7 +787,13 @@ a>span {
 
 #header-panel {
 	position: relative;
-	height: 22px;
+	/* Grow with the (taller) search box instead of clipping it: the old
+	   fixed 22px height left the border-bottom line stranded above the
+	   enlarged input. flow-root contains the floated #action-menu-toolset
+	   so it actually contributes to the panel height. */
+	height: auto;
+	min-height: 22px;
+	display: flow-root;
 	border-bottom: 1px solid #ced4da;
 	padding: 2px 2px 0px 2px;
 	white-space: nowrap;
@@ -719,9 +885,10 @@ a>span {
 #search-set #search-editor {
 	border: 0;
 	color: #212529;
-	font-size: 12px;
+	font-size: 13px;
 	outline: 0;
-	padding: 0 2px;
+	padding: 0 4px;
+	line-height: 24px;
 	/* border-bottom: solid 1px #EEEEEE; */
 	transition: background-color 0.4s
 		/* 0.2s */
@@ -732,7 +899,8 @@ a>span {
 
 	/* max-width: 300px; */
 	width: 80px;
-	height: 16px;
+	height: 24px;
+	vertical-align: middle;
 
 	text-overflow: ellipsis;
 	/* border-bottom: 1px solid transparent; */
@@ -998,3 +1166,809 @@ a.option:hover .fa-gear,
 	cursor: progress !important;
 }
 */
+
+/*==================================================================
+  Modern UI refresh
+  ------------------------------------------------------------------
+  Visual-only overrides for the legacy hard-coded colours that were
+  left behind when the theme variables were introduced (pale-yellow
+  search field, inset "skeuomorphic" shadows, white popovers, neon
+  green/red state fills, red hover text) plus the 2013-era looks of
+  jQuery UI / toolbar / alertify / pickadate.
+
+  CONSTRAINT: init.js and util.js measure the geometry of
+  #search-editor, #search-set > span, .option-icon, .frame,
+  #header-panel, #footer-panel and #separator. None of those elements
+  gets a changed width / height / padding / margin / border-width /
+  float / position / display below. Where a border needs restyling,
+  an inset box-shadow is used instead so their box model stays
+  exactly the same. Form controls inside dialogs only get colours and
+  padding, with box-sizing:border-box keeping their total width.
+==================================================================*/
+
+/* ---- dividers, headers, frames ---- */
+hr {
+	border-style: solid;
+	border-width: 1px 0 0;
+	border-color: var(--border-primary);
+}
+
+#header-panel,
+#explore-panel {
+	border-bottom-color: var(--border-primary);
+}
+
+#explore-panel {
+	box-shadow: none;
+}
+
+#separator {
+	background: var(--separator-color);
+	border-radius: var(--radius-pill);
+}
+
+#separator:hover {
+	background: var(--accent-primary);
+	opacity: 0.65;
+}
+
+#footer-panel {
+	background-color: var(--bg-secondary);
+	border-top-color: var(--border-primary);
+	color: var(--text-tertiary);
+}
+
+#current-mode {
+	color: var(--accent-primary);
+	font-weight: 600;
+}
+
+/* ---- search field: flat, theme-aware, zero geometry change ---- */
+#search-set #search-editor {
+	background-color: var(--input-bg);
+	color: var(--text-primary);
+	border-radius: var(--radius-sm);
+	box-shadow: inset 0 0 0 1px var(--input-border);
+}
+
+#search-set #search-editor::placeholder {
+	color: var(--input-placeholder);
+	opacity: 1;
+}
+
+#search-set #search-editor:hover {
+	background-color: var(--input-focus-bg);
+}
+
+#search-set #search-editor:focus {
+	background-color: var(--input-focus-bg);
+	box-shadow: inset 0 0 0 1px var(--input-focus-border),
+		0 0 0 3px var(--focus-ring);
+}
+
+#search-icon {
+	color: var(--text-tertiary);
+}
+
+/* ---- icon buttons / filter chips / date shortcuts ---- */
+#icon-calendar-content-buttons>button,
+#search-set>span,
+.option-icon {
+	background-color: var(--button-bg);
+	border-color: var(--border-primary);
+	color: var(--text-secondary) !important;
+	box-shadow: none;
+	border-radius: var(--radius-sm);
+}
+
+#icon-calendar-content-buttons>button:hover,
+.option-icon:hover {
+	background-color: var(--button-hover-bg);
+	border-color: var(--border-hover);
+	color: var(--text-primary) !important;
+}
+
+.option-icon.pressed {
+	background-color: var(--accent-soft);
+	border-color: var(--accent-primary);
+	color: var(--accent-primary) !important;
+}
+
+/* ---- results: hover feedback, softer group headers ---- */
+#result-list li:not(.group):hover>a {
+	background-color: var(--hover-bg);
+}
+
+#result-list li.group {
+	border-radius: var(--radius-sm);
+}
+
+#result-list li.group .group-count {
+	border-radius: var(--radius-pill);
+	color: var(--text-secondary);
+}
+
+.result-hit {
+	border-radius: 3px;
+	color: inherit;
+}
+
+#result-panel::-webkit-scrollbar-track,
+#result-panel::-webkit-scrollbar-thumb {
+	-webkit-box-shadow: none;
+}
+
+/* ---- menus / popovers ---- */
+.menu,
+#search-history,
+#explore-sibling,
+#explore-history,
+#option-panel {
+	border-color: var(--menu-border);
+	border-radius: var(--radius-md);
+	box-shadow: 0 12px 32px var(--shadow-md);
+}
+
+.menu li:not(.menu-item-disabled):hover {
+	border-color: transparent;
+}
+
+#search-history li:hover,
+#explore-sibling li:hover,
+#explore-history li:hover,
+.menu-item:not(.menu-item-disabled):hover {
+	background-color: var(--menu-item-hover);
+	color: var(--text-primary);
+}
+
+.menu-item:not(.menu-item-disabled):hover {
+	color: var(--accent-primary);
+}
+
+.menu-item:not(.menu-item-disabled):hover span:first-child {
+	color: var(--accent-primary);
+}
+
+.explore-sibling-top {
+	background-color: var(--accent-soft);
+	color: var(--accent-primary) !important;
+	box-shadow: inset 2px 0 0 var(--accent-primary);
+}
+
+#search-history .search-history-clear {
+	color: var(--text-tertiary);
+}
+
+#search-history .search-history-clear:hover {
+	background-color: var(--hover-bg);
+	color: var(--accent-error);
+}
+
+/* ---- dialogs and their form controls ---- */
+#result-item-editor,
+.window {
+	border-radius: var(--radius-md);
+	box-shadow: 0 16px 40px var(--shadow-lg);
+}
+
+#result-item-editor input,
+.window input,
+.datepicker,
+.inpType {
+	box-sizing: border-box;
+	background-color: var(--input-bg);
+	color: var(--text-primary);
+	border: 1px solid var(--input-border);
+	border-radius: var(--radius-sm);
+	padding: 3px 6px;
+}
+
+#result-item-editor input:focus,
+.window input:focus,
+.datepicker:focus,
+.inpType:focus {
+	outline: 0;
+	border-color: var(--input-focus-border);
+	box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.editor-button span:hover,
+.info-button span:hover,
+.about-button span:hover {
+	background-color: var(--button-hover-bg);
+	border-color: var(--button-hover-border);
+	color: var(--accent-primary);
+}
+
+.editor-button .button-ok {
+	background-color: var(--accent-primary);
+	border-color: var(--accent-primary);
+	color: #ffffff;
+	font-weight: 600;
+}
+
+.editor-button .button-ok:hover {
+	background-color: var(--accent-hover);
+	border-color: var(--accent-hover);
+	color: #ffffff;
+}
+
+/* ---- legacy hard-coded greys / neon state colours ---- */
+.explore-hierarchy-arrow,
+.explore-arrow .explore-backward,
+.explore-arrow .explore-forward,
+.empty {
+	color: var(--text-tertiary);
+}
+
+.fa-file-none,
+.fa-folder-none,
+.fa-calendar-none,
+.fa-search-normal {
+	color: var(--text-disabled) !important;
+}
+
+.fa-explore-movable {
+	color: var(--text-primary) !important;
+}
+
+.fa-sort-title {
+	color: var(--accent-success) !important;
+}
+
+.fa-sort-url {
+	color: var(--accent-error) !important;
+}
+
+.view-active {
+	background-color: var(--success-soft);
+}
+
+.view-active-not-possiable {
+	background-color: var(--error-soft);
+}
+
+#view-icon {
+	color: var(--accent-primary);
+}
+
+/* ---- drag placeholder / jQuery UI selectable ---- */
+.placeholder:after {
+	background-color: var(--accent-primary);
+	border-left-color: var(--accent-primary);
+	border-right-color: var(--accent-primary);
+	opacity: 0.55;
+}
+
+.ui-selectable-helper {
+	border: 1px dashed var(--accent-primary) !important;
+	background-color: var(--accent-soft) !important;
+}
+
+.ui-sortable-helper {
+	box-shadow: 0 8px 24px var(--shadow-lg);
+}
+
+/* ---- toolbar popover (jquery.toolbar) ---- */
+.tool-container .tool-item>.fa {
+	color: var(--text-secondary) !important;
+}
+
+.tool-item:hover,
+.tool-item.selected {
+	background-color: var(--hover-bg) !important;
+	border-left-color: transparent !important;
+	border-right-color: transparent !important;
+}
+
+.tool-item:hover>.fa,
+.tool-item.selected>.fa {
+	color: var(--accent-primary) !important;
+}
+
+.tool-item:first-child:hover,
+.tool-item:last-child:hover {
+	border-radius: var(--radius-sm) !important;
+}
+
+/* ---- alertify dialogs and toasts ---- */
+.alertify {
+	background: var(--modal-bg);
+	border: 1px solid var(--modal-border);
+	border-radius: var(--radius-md);
+	box-shadow: 0 20px 48px var(--shadow-lg);
+}
+
+.alertify-text {
+	background-color: var(--input-bg);
+	color: var(--text-primary);
+	border: 1px solid var(--input-border);
+	border-radius: var(--radius-sm);
+}
+
+.alertify-button {
+	border-radius: var(--radius-sm);
+	text-shadow: none;
+	box-shadow: none;
+	background-image: none;
+}
+
+.alertify-button:hover,
+.alertify-button:focus {
+	background-image: none;
+	box-shadow: none;
+}
+
+.alertify-button-cancel,
+.alertify-button-cancel:hover,
+.alertify-button-cancel:focus {
+	background-color: var(--button-bg);
+	border: 1px solid var(--button-border);
+	color: var(--text-primary);
+}
+
+.alertify-button-ok,
+.alertify-button-ok:hover,
+.alertify-button-ok:focus {
+	background-color: var(--accent-primary);
+	border: 1px solid var(--accent-primary);
+	color: #ffffff;
+}
+
+.alertify-log {
+	background: var(--menu-bg);
+	color: var(--text-primary);
+	border: 1px solid var(--menu-border);
+	border-radius: var(--radius-sm);
+	box-shadow: 0 8px 24px var(--shadow-md);
+	text-shadow: none;
+}
+
+.alertify-log-error {
+	background: var(--error-soft);
+	border-color: var(--accent-error);
+	color: var(--accent-error);
+}
+
+.alertify-log-success {
+	background: var(--success-soft);
+	border-color: var(--accent-success);
+	color: var(--accent-success);
+}
+
+/* ---- pickadate calendar ---- */
+.picker {
+	color: var(--text-primary);
+}
+
+.picker__holder {
+	background: var(--menu-bg);
+	border-color: var(--menu-border);
+	border-radius: var(--radius-md);
+	box-shadow: 0 16px 40px var(--shadow-lg);
+}
+
+.picker__select--month,
+.picker__select--year,
+.picker__button--clear,
+.picker__button--close,
+.picker__button--today {
+	background: var(--button-bg);
+	color: var(--text-primary);
+	border-color: var(--border-primary);
+}
+
+.picker__select--month:focus,
+.picker__select--year:focus,
+.picker__day--highlighted,
+.picker__input.picker__input--active {
+	border-color: var(--accent-primary);
+}
+
+.picker__nav--next:hover,
+.picker__nav--prev:hover,
+.picker__day--infocus:hover,
+.picker__day--outfocus:hover,
+.picker__day--highlighted:hover,
+.picker__button--clear:hover,
+.picker__button--close:hover,
+.picker__button--today:hover {
+	background: var(--hover-bg);
+	color: var(--text-primary);
+	border-bottom-color: var(--border-primary);
+}
+
+.picker__nav--next:before {
+	border-left-color: var(--text-secondary);
+}
+
+.picker__nav--prev:before {
+	border-right-color: var(--text-secondary);
+}
+
+.picker__weekday,
+.picker__year,
+.picker__day--outfocus {
+	color: var(--text-tertiary);
+}
+
+.picker__day--today:before {
+	border-top-color: var(--accent-primary);
+}
+
+.picker__day--selected,
+.picker__day--selected:hover,
+.picker--focused .picker__day--selected {
+	background: var(--accent-primary);
+	color: #ffffff;
+}
+
+.picker__day--disabled,
+.picker__day--disabled:hover,
+.picker--focused .picker__day--disabled,
+.picker__button--today[disabled],
+.picker__button--today[disabled]:hover {
+	background: var(--bg-tertiary);
+	border-color: var(--bg-tertiary);
+	color: var(--text-disabled);
+}
+
+/* ---- keyboard focus ring (no geometry impact) ---- */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+	outline: 2px solid var(--accent-primary);
+	outline-offset: 1px;
+}
+
+/*==================================================================
+  Stage 1 - flexible header layout
+  ------------------------------------------------------------------
+  The right header used to be a float:right icon group plus a block
+  search row whose input width was computed in JS with outerWidth()
+  arithmetic. That is replaced by a real flex row: the input now takes
+  exactly the remaining space, so font loading, theme changes, showing
+  / hiding the advanced icons and resizing the frames all settle
+  themselves without a measurement.
+
+  Scope notes:
+  - Only #right-frame > #header-panel is targeted. The left frame has
+    its own #header-panel (view icon / title / close) and keeps its
+    inline flow.
+  - DOM order is icon group then search box; `order` keeps the search
+    box on the left without editing popup.html. The old float:right
+    already produced the same visual and tab order.
+  - The history dropdown becomes an absolute overlay anchored to
+    #search-set. It used to be position:relative, so opening it
+    stretched the auto-height header while #result-panel kept its
+    fixed computed height, pushing the list under the footer.
+  - Header height is unchanged (the 24px input still drives it), so
+    #result-panel's computed height and lastSearchScroll restoration
+    are untouched. No result-row geometry is modified below.
+==================================================================*/
+
+#right-frame > #header-panel {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+#right-frame #search-set {
+	position: relative;
+	order: 0;
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+#right-frame > #header-panel #action-menu-toolset {
+	float: none;
+	order: 1;
+	flex: 0 0 auto;
+}
+
+#right-frame #search-set > span {
+	display: flex;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+#right-frame #search-set #search-editor {
+	flex: 1 1 auto;
+	min-width: 60px;
+	width: auto;
+	box-sizing: border-box;
+	transition: background-color 0.25s linear, box-shadow 0.15s ease;
+}
+
+#right-frame #search-set #search-history {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	width: auto;
+	margin-top: 3px;
+	box-sizing: border-box;
+}
+
+/*==================================================================
+  Stage 2 - variable-driven geometry & flexible vertical layout
+  ------------------------------------------------------------------
+  All of the old magic numbers were expressions of one relationship:
+
+      790 = 282 (left) + 2 (gap) + 4 (separator) + 2 (gap) + 500 (right)
+
+  The legacy CSS only encoded the first two terms, so the right frame
+  started at x=395 while the separator ended at x=293 - a 102px hole.
+  JS papered over it with bmp.rightFrameX=500 and -2 / +-4 fudge
+  factors during separator drags. The variables below make the equation
+  explicit, so the CSS itself is closed before any JS runs.
+
+  Vertically, .frame becomes a flex column. #result-panel takes the
+  remaining space instead of being sized by
+    MAX_POPUP_HEIGHT - header - explore - footer - margin
+  which went stale whenever the header grew. #footer-panel leaves the
+  absolute flow and becomes the last flex item.
+
+  HARD CONSTRAINT: result-row geometry (li height / line-height /
+  padding / font-size) is untouched, so lastSearchScroll restoration
+  still maps to the same pixel rows. Only container boxes change.
+==================================================================*/
+
+:root {
+	--popup-margin: 5px;
+	--popup-w: 390px;
+	--popup-w-extend: 790px;
+	--popup-h: 590px;
+	--split-left: 282px;
+	--sep-w: 4px;
+	--frame-gap: 2px;
+}
+
+body {
+	width: var(--popup-w);
+	height: var(--popup-h);
+	margin: var(--popup-margin);
+}
+
+body.extend {
+	width: var(--popup-w-extend);
+}
+
+.frame {
+	display: flex;
+	flex-direction: column;
+	height: var(--popup-h);
+}
+
+#left-frame {
+	left: var(--popup-margin);
+	width: var(--split-left);
+	height: var(--popup-h);
+}
+
+#separator {
+	left: calc(var(--popup-margin) + var(--split-left) + var(--frame-gap));
+	width: var(--sep-w);
+	height: var(--popup-h);
+}
+
+#right-frame {
+	right: var(--popup-margin);
+	width: var(--popup-w);
+	height: var(--popup-h);
+}
+
+body.extend #right-frame {
+	width: calc(var(--popup-w-extend)
+		- var(--split-left)
+		- var(--sep-w)
+		- 2 * var(--frame-gap));
+}
+
+/* The drag rails were pinned to 150px..402px for an 800px popup.
+   Percentages of the viewport keep them proportional if the two
+   popup width variables above are ever changed together. */
+#containment {
+	left: 19%;
+	width: 32%;
+}
+
+/* ---- vertical flex children ---- */
+.frame > #header-panel,
+.frame > #explore-panel,
+.frame > #footer-panel {
+	flex: 0 0 auto;
+}
+
+.frame > #result-panel {
+	flex: 1 1 auto;
+	min-height: 0;
+	height: auto;
+	/* "all" used to animate the computed height during drags, which made
+	   hit-testing read mid-animation geometry. Only colour transitions. */
+	transition: background-color 0.2s ease;
+}
+
+.frame > #footer-panel {
+	position: static;
+}
+
+/*==================================================================
+  Stage 3 - shared header grid & viewport-clamped overlays
+  ------------------------------------------------------------------
+  Two leftovers of the fixed-width design:
+
+  1) The two #header-panel elements have different DOM and no shared
+     grid. Stage 1 turned the right one into a flex row; the left one
+     stayed an inline flow whose #view-type{width:100%} (line 802) is
+     dead code - width is ignored on a non-positioned inline span, so
+     the icon / title / close button only lined up by accident.
+
+  2) Overlay widths were absolute and unrelated to the popup:
+       .window                     width:22em            (line 624)
+       #result-item-editor         width:90%/max 450px   (line 557)
+       #result-item-editor input   left:100px; width:85% (lines 574-576)
+       .menu                       no max-width at all   (line 502)
+     .menu also has white-space:nowrap, so one long label could push
+     the context menu off the right edge. The `left` on the editor
+     input is dead too: the input is not a positioned box.
+
+  Every width below is clamped to the real popup viewport. Chrome caps
+  a popup at 800x600 and never resizes it with the window, so 100vw is
+  exactly 400px (single) / 800px (extended) here - this is NOT a
+  responsive breakpoint.
+
+  #option-panel{margin-left:80px} (line 378) is intentionally left
+  alone: that id does not exist in popup.html. The real context menu
+  is #option-menu.menu, so the limit is applied to .menu instead.
+
+  HARD CONSTRAINT: no #result-list row geometry (li height /
+  line-height / padding / font-size) is touched, so lastSearchScroll
+  restoration still maps to the same pixel rows.
+==================================================================*/
+
+/* ---- one grid for both headers ---- */
+.frame > #header-panel {
+	display: flex;
+	align-items: center;
+	box-sizing: border-box;
+	column-gap: 6px;
+}
+
+#left-frame > #header-panel > #view-icon {
+	flex: 0 0 auto;
+}
+
+#left-frame > #header-panel > #view-type {
+	flex: 1 1 auto;
+	min-width: 0;
+	width: auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+#left-frame > #header-panel > #view-hide {
+	flex: 0 0 auto;
+	margin-left: auto;
+}
+
+/* ---- overlay width token: the single source of truth ----
+   Clamp formulas live in the rules that consume them (not as derived
+   :root tokens), so a narrower container can override just
+   --overlay-avail and every overlay follows it. */
+:root {
+	--overlay-gutter: 12px;
+	--overlay-avail: calc(100vw - 2 * var(--popup-margin) - 2 * var(--overlay-gutter));
+}
+
+/* context menu: never wider than the popup; long labels ellipsize */
+.menu {
+	min-width: min(100px, var(--overlay-avail));
+	max-width: clamp(150px, 20em, min(280px, var(--overlay-avail)));
+	box-sizing: border-box;
+}
+
+.menu li {
+	max-width: 100%;
+	overflow: hidden;
+}
+
+.menu-item {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.menu-item span:first-child {
+	flex: 0 0 15px;
+	width: 15px;
+	text-align: center;
+}
+
+.menu-item span:last-child {
+	flex: 1 1 auto;
+	min-width: 0;
+	padding-left: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* info / about windows */
+.window {
+	width: clamp(240px, 22em, min(420px, var(--overlay-avail)));
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+/* edit dialog: label and input now share one aligned flex row */
+#result-item-editor {
+	width: min(90vw, var(--overlay-avail));
+	max-width: min(450px, var(--overlay-avail));
+	box-sizing: border-box;
+}
+
+#result-item-editor .editor-title,
+#result-item-editor .editor-url {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+#result-item-editor .editor-title > span,
+#result-item-editor .editor-url > span {
+	flex: 0 0 auto;
+}
+
+#result-item-editor input {
+	float: none;
+	left: auto;
+	width: auto;
+	max-width: none;
+	flex: 1 1 auto;
+	min-width: 0;
+	box-sizing: border-box;
+}
+
+/* browse dropdowns */
+#explore-sibling,
+#explore-history {
+	min-width: min(50px, var(--overlay-avail));
+	max-width: min(250px, var(--overlay-avail));
+	box-sizing: border-box;
+}
+
+/* jquery.toolbar items are 40px tall; the old 30px box clipped them */
+.tool-container.tool-top,
+.tool-container.tool-bottom {
+	height: auto;
+	min-height: 40px;
+}
+
+/*==================================================================
+  Stage 4 - modern folder glyph (visual only)
+
+  The folder icon used to be a 16x16 4-bit palette, Windows-XP-style
+  yellow bitmap (img/folder.png). It is now a flat, rounded, two-tone
+  vector glyph (img/folder.svg). The <img> element itself MUST stay:
+  script.js binds the folder click handler with $f.find('img'), and
+  util.js builds the sortable drag helper from the same element.
+
+  HARD CONSTRAINT: the glyph stays 16x16. Result-row height drives
+  lastSearchScroll restoration, so this block contains no #result-list
+  li / height / line-height / font-size / padding declarations.
+==================================================================*/
+
+/* covers both the result-row icon and the sortable drag helper */
+img[src*="folder.svg"] {
+	width: 16px;
+	height: 16px;
+	border-radius: 3px;
+}
+
+/* lift the neutral indigo slightly on the dark canvas */
+html[data-theme="dark"] img[src*="folder.svg"] {
+	filter: brightness(1.18) saturate(1.06);
+}

@@ -2,20 +2,22 @@
 <html>
 
 <head>
+	<meta charset="utf-8">
 	<title>Bookmark Manager Plus M3 - Options</title>
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+	<link rel="stylesheet" href="lib/font-awesome/css/font-awesome.min.css">
 	<link rel="stylesheet" href="lib/alertify/themes/alertify.core.css">
 	<link rel="stylesheet" href="lib/alertify/themes/alertify.default.css">
 	<link rel="stylesheet" href="css/themes.css">
 	<link rel="stylesheet" href="css/switch.css">
 	<link rel="stylesheet" href="css/options.css">
-	<script src="lib/jquery/jquery-1.12.4.min.js"></script>
-	<script src="lib/jquery/jquery-ui.min.js"></script>
-	<script src="lib/alertify/alertify.js"></script>
-	<script src="js/constant.js"></script>
-	<script src="js/strings.js"></script>
-	<script src="js/util.js"></script>
-	<script src="js/options.js"></script>
+	<script defer src="lib/jquery/jquery-1.12.4.min.js"></script>
+	<!-- jQuery UI is not needed on the options page: no widget is used here
+	     (draggable/droppable/sortable are popup-only), saves ~250KB parse. -->
+	<script defer src="lib/alertify/alertify.min.js"></script>
+	<script defer src="js/constant.js"></script>
+	<script defer src="js/strings.js"></script>
+	<script defer src="js/util.js"></script>
+	<script defer src="js/options.js"></script>
 </head>
 
 <body>

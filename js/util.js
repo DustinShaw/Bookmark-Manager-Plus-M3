@@ -529,36 +529,40 @@ function getParentFrame(selector) {
 // get currFrame by considering its position. When sorting, it's often difficult 
 // to say on which frame the mouse is actually sorting.
 function getCurrFrame(event, center) {
-	if ($body.hasClass('extend')) {
+	if (!$body.hasClass('extend')) {
+		return '#right-frame';
+	}
 
-		if (center) {
-			var centerX = $('#separator').offset().left + $('#separator').outerWidth() / 2;
-			if (centerX < event.clientX) {
-				return '#right-frame';
-			} else {
-				return '#left-frame';
-			}
-		} else {
-			var y = $leftFrame.offset().top;
-			var x = $leftFrame.offset().left;
-			var width = $leftFrame.width();
-			var height = $leftFrame.height();
+	// Stage 2: read the real boxes instead of jQuery offset() + width()
+	// plus a hard-coded +-4px fudge. This stays correct while the
+	// append/remove animations are running and after a split change.
+	var separator = document.getElementById('separator');
+	var left = document.getElementById('left-frame');
+	var right = document.getElementById('right-frame');
+	if (!separator || !left || !right) {
+		return '#right-frame';
+	}
 
-			if (event.clientX > x && event.clientX < x + width + 4 && event.clientY > y && event.clientY < y + height) {
-				return '#left-frame';
-			}
+	var sepRect = separator.getBoundingClientRect();
+	var boundary = sepRect.left + sepRect.width / 2;
 
-			var y = $rightFrame.offset().top;
-			var x = $rightFrame.offset().left;
-			var width = $rightFrame.width();
-			var height = $rightFrame.height();
+	if (center) {
+		return boundary < event.clientX ? '#right-frame' : '#left-frame';
+	}
 
-			if (event.clientX > x - 4 && event.clientX < x + width && event.clientY > y && event.clientY < y + height) {
-				return '#right-frame';
-			}
-		}
+	var leftRect = left.getBoundingClientRect();
+	var rightRect = right.getBoundingClientRect();
 
-	} else {
+	function withinY(rect) {
+		return event.clientY > rect.top && event.clientY < rect.bottom;
+	}
+
+	// The separator's box (plus the 2px gaps) is assigned to whichever
+	// side the pointer is on, so the whole strip stays hit-testable.
+	if (event.clientX > leftRect.left && event.clientX <= boundary && withinY(leftRect)) {
+		return '#left-frame';
+	}
+	if (event.clientX >= boundary && event.clientX < rightRect.right && withinY(rightRect)) {
 		return '#right-frame';
 	}
 }
@@ -1335,6 +1339,69 @@ function getFrameHeight() {
 	return getPopupHeight();
 }
 
+/* Stage 2: the CSS variables in default.css are the single source of
+   truth for the popup geometry. Read them instead of repeating 790/4/2
+   in every JS handler. `avail` is the width left for the two frames
+   once the separator and its two gaps are removed. */
+function getSplitMetrics() {
+	var cs = getComputedStyle(document.documentElement);
+	function num(name) {
+		return parseFloat(cs.getPropertyValue(name)) || 0;
+	}
+
+	var margin = getBodyHorizontalMargin() / 2;
+	var sepWidth = num('--sep-w');
+	var gap = num('--frame-gap');
+	var extendWidth = num('--popup-w-extend');
+	var avail = extendWidth - sepWidth - 2 * gap;
+
+	// jQuery UI confines the separator's left edge to #containment.
+	// Derive the drag rails from its real box instead of 150px..402px.
+	// #containment is position:fixed with percentage offsets, so those
+	// resolve against the viewport - 400px in single-column mode, 800px
+	// when extended. init() measures before the view is appended, so
+	// normalise the rails to the extended viewport first.
+	var $containment = $('#containment');
+	var rail = $containment.length ? $containment[0].getBoundingClientRect() : null;
+	var viewport = document.documentElement.clientWidth || 1;
+	var scale = (extendWidth + 2 * margin) / viewport;
+	var minLeft = rail ? rail.left * scale - margin - gap : 145;
+	var maxLeft = rail ? rail.right * scale - sepWidth - margin - gap : 397;
+
+	return {
+		popupWidth: num('--popup-w'),
+		extendWidth: extendWidth,
+		separatorWidth: sepWidth,
+		gap: gap,
+		margin: margin,
+		avail: avail,
+		minLeft: minLeft,
+		maxLeft: maxLeft,
+	};
+}
+
+function clampSplitLeft(left, metrics) {
+	metrics = metrics || getSplitMetrics();
+	return Math.max(metrics.minLeft, Math.min(metrics.maxLeft, Math.round(left)));
+}
+
+/* Apply a remembered split (ratio = leftWidth / avail) and keep the
+   append-view animation target in sync with the CSS. */
+function applySplitRatio(ratio) {
+	var metrics = getSplitMetrics();
+	var value = parseFloat(ratio);
+	if (!isFinite(value)) {
+		value = DEFAULT_SPLIT_RATIO;
+	}
+	value = Math.max(0, Math.min(1, value));
+
+	var left = clampSplitLeft(value * metrics.avail, metrics);
+	document.documentElement.style.setProperty('--split-left', left + 'px');
+	bmp.rightFrameX = metrics.avail - left;
+	bmp.splitRatio = left / metrics.avail;
+	return left;
+}
+
 function updateExploreHierarchyMaxWidth(targetFrame) {
 	if (targetFrame == undefined) {
 		targetFrame = bmp.currFrame;
@@ -1346,18 +1413,13 @@ function updateExploreHierarchyMaxWidth(targetFrame) {
 }
 
 function updateResultPanelHeight(targetFrame) {
-	if (targetFrame == undefined) {
-		targetFrame = bmp.currFrame;
-	}
-
-	var $targetFrame = $(targetFrame);
-	var height = $targetFrame.find('#header-panel').outerHeight()
-		+ $targetFrame.find('#explore-panel').outerHeight()
-		+ $targetFrame.find('#footer-panel').outerHeight()
-		+ getBodyVerticalMargin();
-
-	height = MAX_POPUP_HEIGHT - height;
-	$targetFrame.find('#result-panel').css('height', height);
+	// Stage 2: .frame is a flex column and #result-panel has flex:1 with
+	// min-height:0, so the browser derives the height from the real
+	// header / explore / footer boxes. The old
+	//   MAX_POPUP_HEIGHT - header - explore - footer - margin
+	// arithmetic went stale whenever the header grew (the search-history
+	// dropdown used to push the list under the footer). Kept as a no-op
+	// so every existing call site stays valid.
 }
 
 function updateGroupMaxWidth(targetFrame) {
@@ -1366,7 +1428,11 @@ function updateGroupMaxWidth(targetFrame) {
 	}
 
 	var $targetFrame = $(targetFrame);
-	var maxWidth = $targetFrame.find('.group').outerWidth() - $('.group-view').outerWidth()
+	// Stage 2: both sides used to be measured against the *global*
+	// $('.group-view'), so a group in the right frame was truncated using
+	// the left frame's width. Scope both operands to the target frame.
+	var maxWidth = ($targetFrame.find('.group').outerWidth() || 0)
+		- ($targetFrame.find('.group-view').outerWidth() || 0);
 	var $ul = $targetFrame.find('#result-list');
 	var $li = $ul.find('.group');
 
@@ -1377,23 +1443,12 @@ function updateGroupMaxWidth(targetFrame) {
 }
 
 function updateSearchEditorWidth() {
-
-	if ($('.search-extend-trigger').find('span').hasClass('fa-minus')) {
-		if ($body.hasClass('extend')) {
-			$searchEditor.css('width', bmp.rightFrameX - 100);
-		} else {
-			$searchEditor.css('width', 290);
-		}
-	} else {
-
-		if ($('.advanced-search-icon-toolbars').css('display') == "none") {
-			var width = bmp.actionMenuToolsetMinWidth;
-		} else {
-			var width = bmp.actionMenuToolsetMaxWidth;
-		}
-
-		$searchEditor.css('width', $('#search-set').outerWidth() - width - ($('#search-set > span').outerWidth() - $searchEditor.outerWidth()) - 10);
-	}
+	// Stage 1: #right-frame > #header-panel is now a flex row and
+	// #search-editor grows into the remaining space on its own. The old
+	// outerWidth() arithmetic is gone - it also used to read mid-transition
+	// values because the input had a 0.25s width animation, which made the
+	// computed width drift while dragging the separator.
+	// Kept as a no-op so the existing event hooks stay valid.
 }
 
 //////////////////////////////////////////////////////////
@@ -1730,7 +1785,10 @@ function showToolset(selector) {
 		$('.toolset-folder').hide();
 	}
 
-	$toolset.show();
+	// Explicit flex: the stylesheet hides #action-hover-toolset by default
+	// (first-paint overlay fix), and jQuery .show() would restore it to
+	// "block" instead of the flex layout it needs.
+	$toolset.css('display', 'flex');
 }
 
 function hideToolset() {
@@ -1780,32 +1838,18 @@ function hideHelpView() {
 
 // handles in/out states at the end of dragging events (sorting or selecting)
 function handleDraggingInOut(e, parameter) {
+	// Stage 2: one getBoundingClientRect() of the actual result panel
+	// replaces four offset()/width()/height() reads that mixed frame and
+	// panel boxes and returned mid-animation values during drags.
+	var frameId = bmp.isViewAppended ? getCurrFrame(e, true) : '#right-frame';
+	var frame = document.getElementById((frameId || '#right-frame').slice(1));
+	var panel = frame ? frame.querySelector('#result-panel') : null;
+	if (!panel) return;
 
-	var x;
-	var y;
-	var width;
-	var height;
+	var rect = panel.getBoundingClientRect();
 
-	if (bmp.isViewAppended) {
-		if (getCurrFrame(e, true) == '#right-frame') {
-			x = $rightFrame.offset().left;
-			y = $rightFrame.find('#result-panel').offset().top;
-			width = $rightFrame.width();
-			height = $rightFrame.find('#result-panel').height();
-		} else {
-			x = $leftFrame.offset().left;
-			y = $leftFrame.find('#result-panel').offset().top;
-			width = $leftFrame.width();
-			height = $leftFrame.find('#result-panel').height();
-		}
-	} else {
-		x = $rightFrame.offset().left;
-		y = $rightFrame.find('#result-panel').offset().top;
-		width = $rightFrame.width();
-		height = $rightFrame.find('#result-panel').height();
-	}
-
-	if (x < e.clientX && e.clientX < x + width && y < e.clientY && e.clientY < y + height) {
+	if (rect.left < e.clientX && e.clientX < rect.right
+		&& rect.top < e.clientY && e.clientY < rect.bottom) {
 		if ($.isFunction(parameter.in)) {
 			parameter.in();
 		}
@@ -1958,7 +2002,7 @@ function createListSortable(targetFrame) {
 				alpha1 *= maxOpacity;
 				alpha2 *= maxOpacity;
 
-				$li.eq(i).css('background', "-webkit-linear-gradient(rgba(234, 245, 253, " + alpha1 + "), rgba(234, 245, 253, " + alpha2 + "))");
+				$li.eq(i).css('background', "-webkit-linear-gradient(rgba(var(--fade-rgb), " + alpha1 + "), rgba(var(--fade-rgb), " + alpha2 + "))");
 				$li.eq(i).find('a').css('opacity', value);
 			}
 
@@ -2327,7 +2371,7 @@ function createExploreSortable() {
 		cursorAt: { left: 5, top: 5 },
 		helper: function (e, item) {
 
-			var $img = $('<img>').attr('src', "img/folder.png").css('vertical-align', "top");
+			var $img = $('<img>').attr('src', "img/folder.svg").css('vertical-align', "top");
 			var $item = item.clone().css({
 				display: "inline-block",
 				'text-decoration': "none",

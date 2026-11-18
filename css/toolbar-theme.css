@@ -1,46 +1,65 @@
 /* ------------------------------------------------ */
 /* Toolbar / Filter Dialog Styling With Theme Support */
+/* Loaded AFTER default.css: keep every rule here theme-aware. */
 /* ------------------------------------------------ */
 
 .tool-container {
-  background-color: var(--menu-bg) !important;
-  border: 1px solid var(--border-primary) !important;
-  color: var(--text-primary) !important;
-  box-shadow: 0 4px 12px var(--shadow-md) !important;
-  border-radius: 8px !important;
+	background-color: var(--menu-bg) !important;
+	border: 1px solid var(--menu-border) !important;
+	color: var(--text-primary) !important;
+	box-shadow: 0 12px 32px var(--shadow-md) !important;
+	border-radius: var(--radius-md) !important;
 }
 
 .tool-container .arrow {
-  border-color: transparent transparent var(--border-primary) !important;
-  top: -14px !important;
-  /* Adjust if needed based on border width */
+	border-color: transparent transparent var(--menu-border) !important;
+	top: -14px !important;
 }
 
-/* Adjust arrow position/color based on placement if needed, 
+/* Adjust arrow position/color based on placement if needed,
    assuming 'bottom' position based on init.js */
 .tool-container.tool-top .arrow {
-  border-color: var(--border-primary) transparent transparent !important;
+	border-color: var(--menu-border) transparent transparent !important;
 }
 
 .tool-container.tool-bottom .arrow {
-  border-color: transparent transparent var(--border-primary) !important;
+	border-color: transparent transparent var(--menu-border) !important;
 }
 
 .tool-container.tool-left .arrow {
-  border-color: transparent transparent transparent var(--border-primary) !important;
+	border-color: transparent transparent transparent var(--menu-border) !important;
 }
 
 .tool-container.tool-right .arrow {
-  border-color: transparent var(--border-primary) transparent transparent !important;
+	border-color: transparent var(--menu-border) transparent transparent !important;
 }
 
 /* Ensure text inside spans is visible */
 .tool-container span {
-  color: var(--text-primary) !important;
+	color: var(--text-secondary) !important;
+}
+
+.tool-container .tool-item>.fa {
+	color: var(--text-secondary) !important;
+}
+
+.tool-container .tool-item:hover>.fa,
+.tool-container .tool-item.selected>.fa {
+	color: var(--accent-primary) !important;
 }
 
 /* Style the switches inside the toolbar */
 .tool-container .switch {
-  border-color: var(--border-secondary) !important;
-  background: var(--bg-tertiary) !important;
+	border-color: var(--border-secondary) !important;
+	background: var(--bg-tertiary) !important;
+}
+
+/* The generic rule above must not flatten the "on" state. */
+.tool-container .switch.switch-on {
+	background: var(--accent-primary) !important;
+	border-color: var(--accent-primary) !important;
+}
+
+.tool-container .switch.switch-on .switch-toggle {
+	background: #ffffff !important;
 }

@@ -2,32 +2,33 @@
 <html>
 
 <head>
-	<link rel="stylesheet" href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" />
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="css/jquery-ui.smoothness.css" />
+	<link rel="stylesheet" href="lib/font-awesome/css/font-awesome.min.css">
 	<link rel="stylesheet" href="lib/alertify/themes/alertify.core.css">
 	<link rel="stylesheet" href="lib/alertify/themes/alertify.default.css">
 	<link rel="stylesheet" href="lib/toolbar/themes/jquery.toolbar.css">
 	<link rel="stylesheet" href="lib/picker/themes/classic.css">
 	<link rel="stylesheet" href="lib/picker/themes/classic.date.css">
-	<link rel="stylesheet" href="lib/picker/themes/classic.time.css">
 	<link rel="stylesheet" href="lib/selectableScroll/themes/jquery-ui-ext.css">
 	<link rel="stylesheet" href="css/themes.css">
 	<link rel="stylesheet" href="css/switch.css">
 	<link rel="stylesheet" href="css/default.css">
 	<link rel="stylesheet" href="css/toolbar-theme.css">
-	<script src="lib/jquery/jquery-1.12.4.min.js"></script>
-	<script src="lib/jquery/jquery-ui.min.js"></script>
-	<script src="lib/alertify/alertify.js"></script>
-	<script src="lib/toolbar/toolbar.js"></script>
-	<script src="lib/picker/picker.js"></script>
-	<script src="lib/picker/picker.date.js"></script>
-	<script src="lib/picker/picker.time.js"></script>
-	<script src="lib/selectableScroll/selectableScroll.js"></script>
-	<script src="js/constant.js"></script>
-	<script src="js/strings.js"></script>
-	<script src="js/util.js"></script>
-	<script src="js/init.js"></script>
-	<script src="js/script.js"></script>
+	<!-- defer: scripts run in order after HTML parsing, so the themed
+	     skeleton paints without waiting for ~550KB of JS to parse -->
+	<script defer src="lib/jquery/jquery-1.12.4.min.js"></script>
+	<script defer src="lib/jquery/jquery-ui.min.js"></script>
+	<script defer src="lib/alertify/alertify.min.js"></script>
+	<script defer src="lib/toolbar/toolbar.js"></script>
+	<script defer src="lib/picker/picker.js"></script>
+	<script defer src="lib/picker/picker.date.js"></script>
+	<script defer src="lib/selectableScroll/selectableScroll.js"></script>
+	<script defer src="js/constant.js"></script>
+	<script defer src="js/strings.js"></script>
+	<script defer src="js/util.js"></script>
+	<script defer src="js/init.js"></script>
+	<script defer src="js/script.js"></script>
 </head>
 
 <body>
@@ -180,6 +181,11 @@
 				</span>
 				<div id="search-history">
 					<ul></ul>
+					<div class="search-history-footer">
+						<button type="button" class="search-history-clear">
+							<span class="fa fa-basic fa-trash-o"></span> 清空历史记录
+						</button>
+					</div>
 				</div>
 			</div>
 		</div>

@@ -71,12 +71,6 @@ var BookmarkManagerPlus = {
 		warning: DEFAULT_WARNING_COUNT,
 		apply: true,
 		openInNewTab: true,
-
-		sameDomain: DEFAULT_SAME_DOMAIN,
-		today: DEFAULT_TODAY,
-		yesterday: DEFAULT_YESTERDAY,
-		week: DEFAULT_WEEK,
-		month: DEFAULT_MONTH,
 	},
 
 	/* 
@@ -154,7 +148,12 @@ var BookmarkManagerPlus = {
 
 
 
+	// Stage 2: target width of the append-view animation, derived from
+	// --split-left by applySplitRatio() rather than hard-coded to 500.
 	rightFrameX: 0,
+
+	// Remembered separator position as leftWidth / usableTwoColumnWidth.
+	splitRatio: DEFAULT_SPLIT_RATIO,
 
 
 
@@ -176,12 +175,6 @@ var BookmarkManagerPlus = {
 
 
 
-	actionMenuToolsetMaxWidth: 0,
-
-	actionMenuToolsetMinWidth: 0,
-
-
-
 	isEmptySearchStarted: false,
 
 	isShortSearchStarted: false,
@@ -192,9 +185,6 @@ var BookmarkManagerPlus = {
 	 *  event queue being processed at the end of refreshTree()
 	 */
 	refreshTreeQueueEvents: [],
-
-	currentTabUrl: "",
-	currentTabDomain: "",
 };
 
 var bmp = BookmarkManagerPlus;
@@ -215,7 +205,12 @@ var $pickadates;
 
 $(document).ready(function () {
 
-	// Initialize theme on popup load
+	// Apply the default theme immediately so the very first paint is
+	// already themed. The async read below overrides it with the saved
+	// theme, so the initial look no longer depends on chrome.storage.sync.
+	document.documentElement.setAttribute('data-theme', DEFAULT_THEME);
+
+	// Initialize theme on popup load (override with the saved theme)
 	StorageManager.get({
 		theme: DEFAULT_THEME
 	}, function (items) {
@@ -223,6 +218,24 @@ $(document).ready(function () {
 	});
 
 	init(function () {
+
+		// Instant first paint: the bookmark tree is already loaded here
+		// (refreshTree runs before this callback), so render the default
+		// browse view right away instead of waiting for
+		// chrome.storage.sync.get, which can be slow on a freshly launched
+		// browser. The synced options are applied and the view is re-painted
+		// below once the read completes, so the final state is always correct.
+		// NOTE: bmp.initialized stays false until the restore block finishes
+		// (see the end of this callback) so no half-configured state is exposed.
+		explore({
+			id: bmp.exploreHierarchy.right.id,
+			hierarchy: bmp.exploreHierarchy.right.hierarchy,
+			targetFrame: '#right-frame',
+			// Do NOT clear the persisted search state on this first paint:
+			// the restore block below reads lastQuery/searchActive afterwards,
+			// and an eager clear here would wipe them before that read.
+			clearSearchState: false,
+		});
 
 		// remove obsolete sync data
 		StorageManager.remove([
@@ -262,21 +275,22 @@ $(document).ready(function () {
 			// icon-toolbar-6
 			start: "",
 			end: "",
+			lastQuery: "",
+			searchActive: false,
+			lastSearchScroll: 0,
 
 			// option-menu
 			append: false,
 			advanced: false,
+			// Stage 2: remembered separator position. This key MUST be
+			// listed here - chrome.storage.sync.get(keysObject) only
+			// returns keys explicitly present in the defaults object.
+			splitRatio: DEFAULT_SPLIT_RATIO,
 
 			// preference
 			apply: true,
 			warning: DEFAULT_WARNING_COUNT,
 			openInNewTab: true,
-
-			sameDomain: DEFAULT_SAME_DOMAIN,
-			today: DEFAULT_TODAY,
-			yesterday: DEFAULT_YESTERDAY,
-			week: DEFAULT_WEEK,
-			month: DEFAULT_MONTH,
 
 			// array
 			history: [],
@@ -356,26 +370,6 @@ $(document).ready(function () {
 			// incremental
 			initSwitch('incremental', $('.icon-incremental-search').find('.switch'));
 
-			// sameDomain
-			initSwitch('sameDomain', $('.icon-same-domain').find('.switch'));
-
-			// today
-			initSwitch('today', $('.icon-today').find('.switch'));
-
-			// yesterday
-			initSwitch('yesterday', $('.icon-yesterday').find('.switch'));
-
-			// week
-			initSwitch('week', $('.icon-week').find('.switch'));
-
-			// month
-			initSwitch('month', $('.icon-month').find('.switch'));
-
-			if (bmp.options.today || bmp.options.yesterday || bmp.options.week || bmp.options.month || bmp.options.sameDomain || (bmp.options.title && bmp.options.whole)) {
-				bmp.isSearching = true;
-				bmp.isEmptySearchStarted = true;
-			}
-
 			// search
 			bmp.options.search = items.search;
 			$('#icon-search-mode').removeClass('fa-basic fa-lg fa-search-normal fa-circle-thin fa-question-circle-o fa-registered');
@@ -447,27 +441,22 @@ $(document).ready(function () {
 				$('#icon-calendar').removeClass('fa-calendar-none');
 			}
 
+			// Stage 2: restore the remembered split before append-view's
+			// 350ms animation reads bmp.rightFrameX. CSS then positions the
+			// left frame and separator without any JS measurement.
+			applySplitRatio(items.splitRatio);
+
 			// append
 			if (items.append) {
 				$optionMenu.find('li:first-child').trigger('click');
 			}
 
-			// advanced
+			// advanced (the flex header absorbs this without a width recalculation)
 			if (items.advanced) {
 				$('.advanced-search-icon-toolbars').show();
-				var width = bmp.actionMenuToolsetMaxWidth;
 			} else {
 				$('.advanced-search-icon-toolbars').hide();
-				var width = bmp.actionMenuToolsetMinWidth;
 			}
-
-			// uses setTimeout to fix incorrect animation
-			setTimeout(function () {
-				$searchEditor.css('width', $('#search-set').outerWidth()
-					- width
-					- ($('#search-set > span').outerWidth() - $searchEditor.outerWidth())
-					- 10);
-			}, 250);
 
 			// warning
 			bmp.options.warning = items.warning;
@@ -479,7 +468,15 @@ $(document).ready(function () {
 			var $history = $searchHistory.find('ul');
 			var query;
 			while (query = items.history.pop()) {
-				var $li = $('<li>').text(query).prependTo($history);
+				var $li = $('<li>');
+				var $text = $('<span>')
+					.addClass('search-history-text')
+					.text(query);
+				var $del = $('<span>')
+					.addClass('search-history-del')
+					.attr('title', '删除该历史记录')
+					.html('<span class="fa fa-basic fa-times" aria-hidden="true"></span>');
+				$li.append($text).append($del).prependTo($history);
 			}
 
 			// exploreHistory
@@ -488,33 +485,36 @@ $(document).ready(function () {
 			// exploreHierarchy
 			bmp.exploreHierarchy = items.exploreHierarchy;
 
-			function finalizeInitialization() {
-				if (bmp.isSearching) {
-					search(true);
-				} else {
-					explore({
-						id: bmp.exploreHierarchy.right.id,
-						hierarchy: bmp.exploreHierarchy.right.hierarchy,
-						targetFrame: '#right-frame',
-					});
-				}
-				bmp.initialized = true;
+			// Restore the last search state: re-run the search when there was a
+			// query, or when a filter-only search view (date/scope) was active;
+			// otherwise fall back to the default browse view.
+			var lastQuery = items.lastQuery || "";
+			// mirrors the empty-search conditions in _search(), so a stale
+			// searchActive flag never triggers the "empty query" alert on reopen
+			var hasFilters = $('#searchStartDate').val().length > 0
+				|| $('#searchEndDate').val().length > 0
+				|| bmp.options.scope
+				|| (bmp.options.title && bmp.options.whole);
+			if (lastQuery.length > 0 || (items.searchActive && hasFilters)) {
+				$searchEditor.val(lastQuery);
+				// Also restore the remembered result-list scroll position;
+				// _search() applies it once right after rendering.
+				bmp.pendingSearchScroll = items.lastSearchScroll || 0;
+				search(true);
+			} else {
+				explore({
+					id: bmp.exploreHierarchy.right.id,
+					hierarchy: bmp.exploreHierarchy.right.hierarchy,
+					targetFrame: '#right-frame',
+				});
 			}
 
-			if (bmp.options.sameDomain && bmp.currentTabDomain === "") {
-				// If sameDomain is active but currentTabDomain isn't ready, fetch it now
-				chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-					if (tabs && tabs[0]) {
-						bmp.currentTabUrl = tabs[0].url;
-						var reg = /:\/\/[^/]*/;
-						var match = reg.exec(tabs[0].url);
-						bmp.currentTabDomain = match ? match[0] : "";
-					}
-					finalizeInitialization();
-				});
-			} else {
-				finalizeInitialization();
-			}
+			// Focus the search editor as soon as the popup opens. The focus
+			// handler selects the whole (restored) query, so the user can start
+			// typing a new keyword right away without clicking the box first.
+			$searchEditor.focus();
+
+			bmp.initialized = true;
 		});
 
 	});
@@ -569,16 +569,6 @@ function init(callback) {
 		bmp.currFrame = '#left-frame';
 	}, true);
 
-	// Fetch current tab info
-	chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-		if (tabs && tabs[0]) {
-			bmp.currentTabUrl = tabs[0].url;
-			var reg = /:\/\/[^/]*/;
-			var match = reg.exec(tabs[0].url);
-			bmp.currentTabDomain = match ? match[0] : "";
-		}
-	});
-
 
 	// Unfocus the search editor on mousedown
 	$rightFrame.find('#result-panel').get(0).addEventListener('mousedown', function (e) {
@@ -613,19 +603,35 @@ function init(callback) {
 		},
 	});
 
+	// Cached at drag start: the popup box and the containment rails do not
+	// change while the separator is being dragged.
+	var dragMetrics = null;
+
 	$('#separator').draggable({
 		axis: "x",
 		cursor: "w-resize",
 		containment: '#containment',
 		start: function (e, ui) {
 			closeUI(e);
+			dragMetrics = getSplitMetrics();
 		},
 		drag: function (e, ui) {
-			var width = $('#separator').outerWidth();
-			$leftFrame.css('width', ui.offset.left - getBodyHorizontalMargin() / 2 - 2/*margin*/);
-			$rightFrame.css('width', getPopupWidth() - ui.offset.left - width + getBodyHorizontalMargin() / 2 - 2/*margin*/);
+			// Stage 2: one closed equation drives all three boxes.
+			//   separatorLeft = margin + leftWidth + gap
+			//   rightWidth    = avail - leftWidth
+			// The separator keeps its inline left from jQuery UI, while the
+			// CSS variable keeps the non-dragged geometry and the next
+			// popup in sync. No +-4px fudge factors any more.
+			var metrics = dragMetrics || getSplitMetrics();
+			var left = clampSplitLeft(ui.offset.left - metrics.margin - metrics.gap, metrics);
+			var right = metrics.avail - left;
 
-			bmp.rightFrameX = getPopupWidth() - ui.offset.left - width + getBodyHorizontalMargin() / 2 - 2/*margin*/;
+			document.documentElement.style.setProperty('--split-left', left + 'px');
+			$leftFrame.css('width', left);
+			$rightFrame.css('width', right);
+
+			bmp.rightFrameX = right;
+			bmp.splitRatio = left / metrics.avail;
 
 			updateExploreHierarchyMaxWidth('#left-frame');
 			updateExploreHierarchyMaxWidth('#right-frame');
@@ -637,6 +643,13 @@ function init(callback) {
 			updateGroupMaxWidth('#right-frame');
 
 			updateSearchEditorWidth();
+		},
+		stop: function () {
+			// Persist once per gesture, not once per drag frame: sync
+			// storage has a write-rate quota.
+			StorageManager.set({
+				splitRatio: bmp.splitRatio,
+			});
 		},
 	})
 
@@ -665,11 +678,16 @@ function init(callback) {
 
 			bmp.isExtending = true;
 
+			// Freeze the single-column width *before* body.extend switches
+			// #right-frame to the two-column calc(), so the 350ms animation
+			// still starts from 390px. Hand the box back to CSS at the end.
+			$rightFrame.css('width', getSplitMetrics().popupWidth);
 			$body.addClass('extend');
 			$rightFrame.animate({
 				width: bmp.rightFrameX,
 			}, 350, "easeOutCubic", function () {
 
+				$rightFrame.css('width', '');
 				$leftFrame.show();
 
 				if (bmp.exploreHierarchy.left.id != null && !bmp.isViewAppended) {
@@ -703,12 +721,17 @@ function init(callback) {
 
 			endOptionMenu();
 
+			// Freeze the current two-column width before dropping `extend`,
+			// otherwise the CSS would snap #right-frame to 390px with no
+			// animation at all. Hand the box back to CSS at the end.
+			var metrics = getSplitMetrics();
+			$rightFrame.css('width', $rightFrame.outerWidth());
 			$body.removeClass('extend');
 			$leftFrame.hide();
 			$('#separator').hide();
 
 			var width = $rightFrame.css('width');
-			$rightFrame.css('width', 390);
+			$rightFrame.css('width', metrics.popupWidth);
 			updateExploreHierarchyMaxWidth('#right-frame');
 			$rightFrame.css('width', width);
 
@@ -716,8 +739,9 @@ function init(callback) {
 			updateResultPanelHeight('#right-frame');
 
 			$rightFrame.animate({
-				width: 390,
+				width: metrics.popupWidth,
 			}, 350, "easeOutCubic", function () {
+				$rightFrame.css('width', '');
 				updateSearchEditorWidth();
 
 				updateGroupMaxWidth('#right-frame');
@@ -2198,6 +2222,16 @@ function init(callback) {
 	// change event : when losing focus (e.keyCode is undefined)
 
 	$searchEditor.on({
+		// Selecting a focused input's whole content lets the user just start
+		// typing a new keyword (it replaces the old one) or hit Backspace once
+		// to clear. The setTimeout defers the select past the trailing mouseup
+		// that would otherwise collapse the selection to a caret; clicking the
+		// input again while already focused does NOT re-fire focus, so manual
+		// caret placement still works.
+		focus: function () {
+			var self = this;
+			setTimeout(function () { self.select(); }, 0);
+		},
 		keyup: function (e) {
 			// [Any key except Enter]
 			if (bmp.options.incremental && e.keyCode != KeyEvent.DOM_VK_RETURN) {
@@ -2275,14 +2309,9 @@ function init(callback) {
 	});
 
 	$('.search-extend-trigger').on('click', function () {
+		// Hiding / showing #icon-set changes the flex row's free space, so
+		// the search input resizes itself - no width arithmetic needed.
 		if ($(this).find('span').hasClass('fa-plus')) {
-			if ($body.hasClass('extend')) {
-				$searchEditor.css('width', bmp.rightFrameX - 100);
-				//console.error('max-width ' + (bmp.rightFrameX - 80));
-			} else {
-				$searchEditor.css('width', 290);
-			}
-
 			$('#icon-set').finish();
 			$('#icon-set').animate({
 				opacity: 0
@@ -2293,18 +2322,6 @@ function init(callback) {
 			});
 
 		} else {
-
-			if ($('.advanced-search-icon-toolbars').css('display') == "none") {
-				var width = bmp.actionMenuToolsetMinWidth;
-			} else {
-				var width = bmp.actionMenuToolsetMaxWidth;
-			}
-
-			$searchEditor.css('width', $('#search-set').outerWidth()
-				- width
-				- ($('#search-set > span').outerWidth() - $searchEditor.outerWidth())
-				- 10);
-
 			$('#icon-set').finish();
 			$('#icon-set').show();
 			$('#icon-set').animate({ opacity: 1 }, 300, function () {
@@ -2319,17 +2336,25 @@ function init(callback) {
 
 		if ($searchHistory.is(":hidden")) {
 			$(this).find('span').toggleClass('fa-chevron-up fa-chevron-down');
-			var borderWidth = $searchHistory.outerWidth() - $searchHistory.innerWidth();
-			var width = $('#search-set > span').outerWidth() - borderWidth;
-			$searchHistory.css({
-				width: width,
-			});
+			// Width comes from left:0 / right:0 on the absolute overlay.
 			$searchHistory.show();
 		} else {
 			$(this).find('span').toggleClass('fa-chevron-up fa-chevron-down');
 			$searchHistory.hide();
 		}
 		e.stopPropagation();
+	});
+
+	$('.search-history-clear').on('click', function (e) {
+		e.stopPropagation();
+		// Clear both the on-screen list and the persisted history, then
+		// collapse the dropdown (the trigger refuses to open it again while
+		// there are no <li> items).
+		$searchHistory.find('ul').empty();
+		StorageManager.set({ history: [] });
+		$searchHistory.hide();
+		$('.search-history-trigger').find('span')
+			.removeClass('fa-chevron-up').addClass('fa-chevron-down');
 	});
 
 	$('#view-hide').on('click', function () {
@@ -2585,12 +2610,51 @@ function init(callback) {
 
 
 
-	$searchHistory.on('click', 'li', function () {
-		$searchEditor.val($(this).text());
-		if (bmp.options.incremental) {
-			clearTimeout(bmp.incrementalSearchTimeoutHandle);
-			bmp.incrementalSearchTimeoutHandle = setTimeout(search, INCREMENTAL_SEARCH_TIMEOUT_DELAY);
+	$searchHistory.on('click', 'li', function (e) {
+		// Clicks on the per-item delete button are handled by the dedicated
+		// handler below; ignore them here so they don't trigger a search.
+		if ($(e.target).closest('.search-history-del').length) {
+			return;
 		}
+		$searchEditor.val($(this).find('.search-history-text').text());
+		// Selecting a history keyword runs the search immediately (same as pressing Enter);
+		// cancel any pending incremental-search timer to avoid a duplicate run.
+		clearTimeout(bmp.incrementalSearchTimeoutHandle);
+		search(true);
+	});
+
+	// Delete a single history entry: remove its <li> and persist the trimmed
+	// list. DOM order (top→bottom) matches the stored array order, so the
+	// remaining items are reproduced identically on the next popup open.
+	$searchHistory.on('click', '.search-history-del', function (e) {
+		e.stopPropagation();
+		$(this).closest('li').remove();
+		var remaining = [];
+		$searchHistory.find('ul li .search-history-text').each(function () {
+			remaining.push($(this).text());
+		});
+		StorageManager.set({ history: remaining });
+		// Mirror the "clear all" behaviour once the list becomes empty.
+		if ($searchHistory.find('ul li').length === 0) {
+			$searchHistory.hide();
+			$('.search-history-trigger').find('span')
+				.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+		}
+	});
+
+	// Remember the search-result scroll position (right frame only) so the
+	// popup can restore it on reopen. Saving is debounced and gated to the
+	// search view, so scrolling the browse view never pollutes the value.
+	var $rightResultPanel = $rightFrame.find('#result-panel');
+	var searchScrollSaveTimer = null;
+	$rightResultPanel.on('scroll', function () {
+		if (bmp.pendingSearchScroll != null) return; // restore in progress
+		if ($('#right-frame #current-mode').text() != "Search") return;
+		clearTimeout(searchScrollSaveTimer);
+		searchScrollSaveTimer = setTimeout(function () {
+			bmp.lastSearchScroll = $rightResultPanel.scrollTop();
+			StorageManager.set({ lastSearchScroll: bmp.lastSearchScroll });
+		}, 300);
 	});
 
 	$document.on('click', '#explore-sibling li', function (e) {
@@ -2874,10 +2938,12 @@ function init(callback) {
 	});
 
 	bmp.currFrame = '#right-frame';
-	bmp.rightFrameX = 500;
-
-	bmp.actionMenuToolsetMaxWidth = $('#action-menu-toolset').outerWidth();
-	bmp.actionMenuToolsetMinWidth = $('#action-menu-toolset').outerWidth() - $('.advanced-search-icon-toolbars').outerWidth();
+	// Stage 2: derive --split-left and the append-view animation target
+	// from the CSS variables. The restore callback may override them with
+	// the saved splitRatio before it triggers append-view.
+	// The actionMenuToolset*Width measurements are gone: Stage 1 made
+	// the search editor a flex item, so nothing consumes them any more.
+	applySplitRatio(DEFAULT_SPLIT_RATIO);
 
 	updateExploreHierarchyMaxWidth('#left-frame');
 	updateExploreHierarchyMaxWidth('#right-frame');
@@ -2992,52 +3058,12 @@ function createIconToolbars() {
 	$container.append($label).append($roundSwitch);
 	$addition.append($container);
 
-	$addition.append('<hr>');
-
-	var $container = $('<span>').addClass('icon-same-domain');
-	var $label = $('<span>').text("Same Domain");
-	var $roundSwitch = createRoundSwitch();
-	$container.append($label).append($roundSwitch);
-	$addition.append($container);
-
-	$addition.append('<br>');
-
-	var $container = $('<span>').addClass('icon-today');
-	var $label = $('<span>').text("Today");
-	var $roundSwitch = createRoundSwitch();
-	$container.append($label).append($roundSwitch);
-	$addition.append($container);
-
-	$addition.append('<br>');
-
-	var $container = $('<span>').addClass('icon-yesterday');
-	var $label = $('<span>').text("Yesterday");
-	var $roundSwitch = createRoundSwitch();
-	$container.append($label).append($roundSwitch);
-	$addition.append($container);
-
-	$addition.append('<br>');
-
-	var $container = $('<span>').addClass('icon-week');
-	var $label = $('<span>').text("Week");
-	var $roundSwitch = createRoundSwitch();
-	$container.append($label).append($roundSwitch);
-	$addition.append($container);
-
-	$addition.append('<br>');
-
-	var $container = $('<span>').addClass('icon-month');
-	var $label = $('<span>').text("Month");
-	var $roundSwitch = createRoundSwitch();
-	$container.append($label).append($roundSwitch);
-	$addition.append($container);
-
 
 	$('#icon-filter').toolbar({
 		position: "bottom",
 		toolbarCss: {
 			width: "155px",
-			height: "320px",
+			height: "180px",
 		},
 		addition: $addition,
 	}).on("toolbarItemClick", function (e, item) {
@@ -3208,101 +3234,6 @@ function createIconToolbars() {
 		});
 
 		$(this).toggleClass('switch-on switch-off');
-	});
-
-	$('.icon-same-domain .switch').on('click', function () {
-
-		if ($(this).hasClass('switch-on')) {
-			bmp.options.sameDomain = false;
-		} else {
-			bmp.options.sameDomain = true;
-		}
-
-		StorageManager.set({
-			sameDomain: bmp.options.sameDomain,
-		});
-
-		$(this).toggleClass('switch-on switch-off');
-
-		if (bmp.options.apply) {
-			search(true);
-		}
-	});
-
-	$('.icon-today .switch').on('click', function () {
-
-		if ($(this).hasClass('switch-on')) {
-			bmp.options.today = false;
-		} else {
-			bmp.options.today = true;
-		}
-
-		StorageManager.set({
-			today: bmp.options.today,
-		});
-
-		$(this).toggleClass('switch-on switch-off');
-
-		if (bmp.options.apply) {
-			search(true);
-		}
-	});
-
-	$('.icon-yesterday .switch').on('click', function () {
-
-		if ($(this).hasClass('switch-on')) {
-			bmp.options.yesterday = false;
-		} else {
-			bmp.options.yesterday = true;
-		}
-
-		StorageManager.set({
-			yesterday: bmp.options.yesterday,
-		});
-
-		$(this).toggleClass('switch-on switch-off');
-
-		if (bmp.options.apply) {
-			search(true);
-		}
-	});
-
-	$('.icon-week .switch').on('click', function () {
-
-		if ($(this).hasClass('switch-on')) {
-			bmp.options.week = false;
-		} else {
-			bmp.options.week = true;
-		}
-
-		StorageManager.set({
-			week: bmp.options.week,
-		});
-
-		$(this).toggleClass('switch-on switch-off');
-
-		if (bmp.options.apply) {
-			search(true);
-		}
-	});
-
-	$('.icon-month .switch').on('click', function () {
-
-		if ($(this).hasClass('switch-on')) {
-			bmp.options.month = false;
-		} else {
-			bmp.options.month = true;
-		}
-
-		StorageManager.set({
-			month: bmp.options.month,
-		});
-
-		$(this).toggleClass('switch-on switch-off');
-
-		if (bmp.options.apply) {
-			search(true);
-		}
 	});
 
 

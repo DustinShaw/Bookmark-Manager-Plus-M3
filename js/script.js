@@ -55,6 +55,25 @@ function getHierarchy(item) {
 	return bmp.hierarchyCache[item.parentId] = "[" + hierarchy + "]";
 }
 
+// Walk a rendered list and put the number of items in each group header,
+// so result groups are easier to tell apart at a glance.
+// No-op when the list has no group headers.
+function annotateGroupCounts(list) {
+	var $currentGroup = null;
+	var count = 0;
+	for (var i = 0; i < list.length; i++) {
+		var $el = list[i];
+		if ($el && $el.hasClass && $el.hasClass('group')) {
+			if ($currentGroup) $currentGroup.find('.group-count').text(count);
+			$currentGroup = $el;
+			count = 0;
+		} else {
+			count++;
+		}
+	}
+	if ($currentGroup) $currentGroup.find('.group-count').text(count);
+}
+
 function createList(parameter) {
 
 	var queries = parameter.queries;
@@ -162,6 +181,7 @@ function createList(parameter) {
 
 		//list.reverse();
 
+		annotateGroupCounts(list);
 		$ul.append(list);
 
 		return;
@@ -357,6 +377,7 @@ function createList(parameter) {
 
 		//list.reverse();
 
+		annotateGroupCounts(list);
 		$ul.append(list);
 	} else if (sortMode == "title") {
 		data.sort(function (a, b) {
@@ -408,6 +429,7 @@ function createList(parameter) {
 				list.push(temp);
 			}
 		}
+		annotateGroupCounts(list);
 		$ul.append(list);
 	} else if (sortMode == "url") {
 		var reg = /\w*:\/\/[^/]*/;
@@ -469,6 +491,7 @@ function createList(parameter) {
 				list.push(temp);
 			}
 		}
+		annotateGroupCounts(list);
 		$ul.append(list);
 	} else {
 		data.sort(function (a, b) { return b.dateAdded - a.dateAdded });
@@ -508,6 +531,7 @@ function createList(parameter) {
 				list.push(temp);
 			}
 		}
+		annotateGroupCounts(list);
 		$ul.append(list);
 	}
 
@@ -603,7 +627,7 @@ function createListItem(parameter) {
 
 			// $t = $('<span style="color: red;">1</span>').text(title.substring(range[0], range[1]));
 			// $q.append($t);
-			$t += "<span style='color: red;'>" + escapeHtml(title.substring(range[0], range[1])) + "</span>";
+			$t += "<span class=\"result-hit\">" + escapeHtml(title.substring(range[0], range[1])) + "</span>";
 			//$q = $($q + $t + "</span>");
 		}
 
@@ -647,7 +671,7 @@ function createListItem(parameter) {
 
 	var $img;
 	if (item.url == undefined) {
-		$img = '<img src="img/folder.png" class="result-icon">';
+		$img = '<img src="img/folder.svg" class="result-icon">';
 	} else {
 		//var faviconURL = "https://www.google.com/s2/favicons?domain=" + item.url;
 		//var faviconURL = "chrome://favicon/" + item.url;
@@ -966,7 +990,16 @@ function explore(parameter) {
 	var $targetFrame = $(targetFrame);
 
 	if (targetFrame == '#right-frame') {
-		$searchEditor.val("");
+		// Only clear the persisted search state on a genuine user navigation
+		// out of the search view. The initial instant paint (explore() called
+		// from init.js before the synced state is read) must NOT wipe the saved
+		// lastQuery/searchActive, otherwise restoring the search on reopen would
+		// read an already-cleared value and never re-run. Pass
+		// clearSearchState:false for that first paint.
+		if (parameter.clearSearchState !== false) {
+			$searchEditor.val("");
+			StorageManager.set({ lastQuery: "", searchActive: false });
+		}
 		$('#current-mode').text("Explore");
 		bmp.isEmptySearchStarted = false;
 		bmp.isShortSearchStarted = false;
@@ -1132,11 +1165,18 @@ function search(isManual) {
 
 	//console.time("search");
 
+	var query = $searchEditor.val();
+
+	// Persist the current query so the popup restores the last search state on reopen.
+	StorageManager.set({ lastQuery: query });
+
 	if (_search(isManual) == "skipHistory") return;
+
+	// The search view (query or filter-only) is active; remember it.
+	StorageManager.set({ searchActive: true });
 
 	//console.timeEnd("search");
 
-	var query = $searchEditor.val();
 	if (query.length == 0) return;
 
 	var $history = $searchHistory.find('ul');
@@ -1157,7 +1197,14 @@ function search(isManual) {
 		if (length > MAX_SEARCH_HISTORY) {
 			$li.last().remove();
 		}
-		$('<li>').text(query).prependTo($history);
+		var $newLi = $('<li>');
+		$('<span>').addClass('search-history-text').text(query).appendTo($newLi);
+		$('<span>')
+			.addClass('search-history-del')
+			.attr('title', '删除该历史记录')
+			.html('<span class="fa fa-basic fa-times" aria-hidden="true"></span>')
+			.appendTo($newLi);
+		$newLi.prependTo($history);
 	}
 
 	var history = [];
@@ -1222,11 +1269,12 @@ function _search(isManual) {
 				if (bmp.shortSearchString != query) {
 					bmp.isShortSearchStarted = false;
 					bmp.shortSearchString = "";
-					alertify.error(str_alertify_error_too_short_query, 4000);
+					// Silently skip short queries during incremental search
+					// (no intrusive error toast; user can still press Enter).
 					return skipHistory();
 				}
 			} else {
-				alertify.error(str_alertify_error_too_short_query, 4000);
+				// Silently skip short queries during incremental search.
 				return skipHistory();
 			}
 		}
@@ -1240,22 +1288,19 @@ function _search(isManual) {
 
 		// when click a search icon or enter
 		if (isManual) {
-			if ((isTitle && isWhole) || timeSet || isScope || bmp.options.sameDomain || bmp.options.today || bmp.options.yesterday || bmp.options.week || bmp.options.month) {
+			if ((isTitle && isWhole) || timeSet || isScope) {
 				bmp.isEmptySearchStarted = true;
 			} else {
 				bmp.isEmptySearchStarted = false;
-				bmp.isSearching = false;
-				refresh();
+				alert(str_alert_empty_query);
 				return skipHistory();
 			}
 
 			// 
 		} else {
 			if (bmp.isEmptySearchStarted) {
-				if ((!isTitle || !isWhole) && !timeSet && !isScope && !bmp.options.sameDomain && !bmp.options.today && !bmp.options.yesterday && !bmp.options.week && !bmp.options.month) {
+				if ((!isTitle || !isWhole) && !timeSet && !isScope) {
 					bmp.isEmptySearchStarted = false;
-					bmp.isSearching = false;
-					refresh();
 					return skipHistory();
 				}
 			} else {
@@ -1436,44 +1481,6 @@ function _search(isManual) {
 		if (results[i].dateAdded < startTime) continue;
 		if (results[i].dateAdded > endTime) continue;
 
-		if (bmp.options.today) {
-			var todayStart = new Date().setHours(0, 0, 0, 0);
-			var todayEnd = new Date().setHours(24, 0, 0, 0);
-			if (results[i].dateAdded < todayStart || results[i].dateAdded > todayEnd) continue;
-		}
-
-		if (bmp.options.yesterday) {
-			var yesterdayStart = new Date();
-			yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-			yesterdayStart.setHours(0, 0, 0, 0);
-			var yesterdayEnd = new Date();
-			yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
-			yesterdayEnd.setHours(24, 0, 0, 0);
-			if (results[i].dateAdded < yesterdayStart || results[i].dateAdded > yesterdayEnd) continue;
-		}
-
-		if (bmp.options.week) {
-			var weekStart = new Date();
-			weekStart.setDate(weekStart.getDate() - 6);
-			weekStart.setHours(0, 0, 0, 0);
-			var weekEnd = new Date();
-			weekEnd.setHours(24, 0, 0, 0);
-			if (results[i].dateAdded < weekStart || results[i].dateAdded > weekEnd) continue;
-		}
-
-		if (bmp.options.month) {
-			var monthStart = new Date();
-			monthStart.setDate(monthStart.getDate() - 30);
-			monthStart.setHours(0, 0, 0, 0);
-			var monthEnd = new Date();
-			monthEnd.setHours(24, 0, 0, 0);
-			if (results[i].dateAdded < monthStart || results[i].dateAdded > monthEnd) continue;
-		}
-
-		if (bmp.options.sameDomain) {
-			if (results[i].url == undefined || bmp.currentTabDomain == "" || !results[i].url.includes(bmp.currentTabDomain)) continue;
-		}
-
 		data.push(results[i]);
 		count++;
 		if (count == warningCount) {
@@ -1520,4 +1527,16 @@ function _search(isManual) {
 	$rightFrame.find('#explore-panel span').removeClass('explore-view');
 
 	$('#current-mode').text("Search");
+
+	// Restore the remembered scroll position once, right after the restored
+	// search view is rendered on popup reopen. Any later (non-restore)
+	// search re-renders the list from the top, so forget the stale value.
+	if (bmp.pendingSearchScroll != null) {
+		$rightFrame.find('#result-panel').scrollTop(bmp.pendingSearchScroll);
+		bmp.lastSearchScroll = bmp.pendingSearchScroll;
+		bmp.pendingSearchScroll = null;
+	} else if (bmp.lastSearchScroll) {
+		bmp.lastSearchScroll = 0;
+		StorageManager.set({ lastSearchScroll: 0 });
+	}
 }

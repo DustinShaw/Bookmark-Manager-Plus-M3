@@ -116,3 +116,21 @@
 This project is based on the original work [Bookmark-Manager-Plus](https://github.com/HyunWooBro/Bookmark-Manager-Plus) by [Kim Hyun-Woo](https://github.com/HyunWooBro)
 
 The current version builds upon the original foundation with bug fixes, new features, and modern UI improvements, while respecting the original concept and intent.
+
+---
+
+## UI 改造（阶段 1–4，2026-11）
+
+本轮只改界面与尺寸骨架，**未改动书签逻辑与搜索状态机**；`manifest.json` 版本仍为 `1.0.0.0`。
+
+| 阶段 | 内容 | 主要落点 |
+|---|---|---|
+| 基础美化 | 深浅双主题变量（各 67 个 token）、中性灰阶 + 靛蓝强调色、去拟物阴影与渐变、第三方皮肤适配 | `css/themes.css`、`css/default.css` 的 `Modern UI refresh` 段 |
+| 阶段 1 | 右栏头部改 flex，搜索框弹性占宽，搜索历史改浮层；删除全部 JS 设宽公式（`updateSearchEditorWidth()` 改为 no-op） | `css/default.css` Stage 1 段、`js/util.js`、`js/init.js` |
+| 阶段 2 | `:root` 变量化双栏几何（`--popup-*`、`--split-left`、`--sep-w`、`--frame-gap`），闭合等式 `790 = 282 + 2 + 4 + 2 + 500`；`.frame` 纵向 flex；拖拽分栏比例持久化 | Stage 2 段、`js/constant.js`、`js/util.js`、`js/init.js` |
+| 阶段 3 | 弹层用 `clamp()` / `min()` 限宽（`--overlay-avail`），左右栏头部统一栅格 | Stage 3 段 |
+| 阶段 4 | 文件夹图标换成扁平双色 `img/folder.svg`，保留 `<img>` 元素与点击绑定，深色主题用 `filter` 提亮；旧 `folder.png` 留作回滚 | `img/folder.svg`、Stage 4 段 |
+
+同时把原先的 CDN 依赖改为本地资源（`css/jquery-ui.smoothness.css` + `css/images/`、`lib/font-awesome/`），CSP 收紧为纯 `'self'`，popup / options 脚本全部 `defer`。
+
+> `preview.html`（静态 UI 预览）与各阶段 `*-before/` 快照仅本地留存，未纳入本仓库。

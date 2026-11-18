@@ -1,5 +1,6 @@
 /*------------------------------------------------*/
-/* Modern Options Page Styling */
+/* Options Page Styling                           */
+/* Flat surfaces, one accent colour, no gradients */
 /*------------------------------------------------*/
 
 * {
@@ -8,6 +9,7 @@
 
 body {
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+	-webkit-font-smoothing: antialiased;
 	margin: 0;
 	padding: 0;
 	background-color: var(--bg-primary);
@@ -23,25 +25,34 @@ body {
 
 /* Header Styling */
 .options-header {
-	text-align: center;
-	padding: 30px 20px;
-	margin-bottom: 30px;
-	background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-	border-radius: 12px;
-	box-shadow: 0 4px 12px var(--shadow-md);
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 24px 26px;
+	margin-bottom: 24px;
+	background-color: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	border-top: 3px solid var(--accent-primary);
+	border-radius: var(--radius-md);
 }
 
 .options-header h1 {
-	margin: 0 0 10px 0;
-	font-size: 2em;
-	font-weight: 600;
-	color: #ffffff;
+	margin: 0;
+	font-size: 1.45em;
+	font-weight: 650;
+	letter-spacing: -0.01em;
+	color: var(--text-primary);
+}
+
+.options-header h1 .fa {
+	color: var(--accent-primary);
+	margin-right: 10px;
 }
 
 .options-header .subtitle {
 	margin: 0;
-	font-size: 1.1em;
-	color: rgba(255, 255, 255, 0.9);
+	font-size: 0.95em;
+	color: var(--text-tertiary);
 	font-weight: 400;
 }
 
@@ -49,48 +60,56 @@ body {
 .options-content {
 	display: flex;
 	flex-direction: column;
-	gap: 20px;
-	margin-bottom: 30px;
+	gap: 16px;
+	margin-bottom: 24px;
 }
 
 /* Option Cards */
 .option-card {
 	background-color: var(--bg-secondary);
 	border: 1px solid var(--border-primary);
-	border-radius: 10px;
+	border-radius: var(--radius-md);
 	overflow: hidden;
-	box-shadow: 0 2px 8px var(--shadow-sm);
-	transition: transform 0.2s ease, box-shadow 0.2s ease;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .option-card:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 4px 12px var(--shadow-md);
+	border-color: var(--border-hover);
+	box-shadow: 0 6px 18px var(--shadow-sm);
 }
 
 .option-header {
 	display: flex;
 	align-items: center;
-	gap: 10px;
-	padding: 16px 20px;
-	background-color: var(--bg-tertiary);
+	gap: 12px;
+	padding: 14px 20px;
+	background-color: transparent;
 	border-bottom: 1px solid var(--border-primary);
 }
 
 .option-icon {
-	font-size: 1.5em;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	flex: 0 0 30px;
+	font-size: 14px;
 	line-height: 1;
+	color: var(--accent-primary);
+	background-color: var(--accent-soft);
+	border-radius: 8px;
 }
 
 .option-header h2 {
 	margin: 0;
-	font-size: 1.3em;
+	font-size: 1.05em;
 	font-weight: 600;
 	color: var(--text-primary);
 }
 
 .option-body {
-	padding: 20px;
+	padding: 6px 20px 14px;
 }
 
 /* Option Rows */
@@ -106,9 +125,9 @@ body {
 }
 
 .option-row label {
-	font-size: 1em;
+	font-size: 0.95em;
 	font-weight: 500;
-	color: var(--text-primary);
+	color: var(--text-secondary);
 	flex: 1;
 }
 
@@ -117,12 +136,12 @@ select,
 input[type="number"] {
 	padding: 8px 12px;
 	border: 1px solid var(--input-border);
-	border-radius: 6px;
+	border-radius: var(--radius-sm);
 	background-color: var(--input-bg);
 	color: var(--text-primary);
 	font-size: 0.95em;
 	min-width: 200px;
-	transition: border-color 0.2s ease, background-color 0.2s ease;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 select:hover,
@@ -135,62 +154,90 @@ input[type="number"]:focus {
 	outline: none;
 	border-color: var(--input-focus-border);
 	background-color: var(--input-focus-bg);
-	box-shadow: 0 0 0 3px rgba(110, 182, 255, 0.1);
+	box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 /* Buttons */
 .options-footer {
 	display: flex;
-	justify-content: center;
-	gap: 15px;
-	padding: 20px;
+	justify-content: flex-end;
+	gap: 12px;
+	padding: 16px 20px;
 	background-color: var(--bg-secondary);
-	border-radius: 10px;
+	border-radius: var(--radius-md);
 	border: 1px solid var(--border-primary);
 }
 
 .btn {
-	padding: 12px 28px;
-	border: none;
-	border-radius: 8px;
-	font-size: 1em;
+	padding: 10px 22px;
+	border: 1px solid transparent;
+	border-radius: var(--radius-sm);
+	font-size: 0.95em;
 	font-weight: 600;
 	cursor: pointer;
-	transition: all 0.2s ease;
+	transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
-	box-shadow: 0 2px 6px var(--shadow-sm);
 }
 
 .btn:hover {
-	transform: translateY(-1px);
-	box-shadow: 0 4px 10px var(--shadow-md);
+	box-shadow: 0 4px 12px var(--shadow-sm);
 }
 
 .btn:active {
-	transform: translateY(0);
-	box-shadow: 0 2px 4px var(--shadow-sm);
+	box-shadow: none;
 }
 
 .btn-primary {
-	background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+	background-color: var(--accent-primary);
 	color: #ffffff;
 }
 
 .btn-primary:hover {
-	background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+	background-color: var(--accent-hover);
 }
 
 .btn-secondary {
 	background-color: var(--button-bg);
 	color: var(--text-primary);
-	border: 1px solid var(--button-border);
+	border-color: var(--button-border);
 }
 
 .btn-secondary:hover {
 	background-color: var(--button-hover-bg);
 	border-color: var(--button-hover-border);
+}
+
+/* alertify toasts on this page (the popup covers them in default.css) */
+.alertify-log {
+	background: var(--menu-bg);
+	color: var(--text-primary);
+	border: 1px solid var(--menu-border);
+	border-radius: var(--radius-sm);
+	box-shadow: 0 8px 24px var(--shadow-md);
+	text-shadow: none;
+}
+
+.alertify-log-error {
+	background: var(--error-soft);
+	border-color: var(--accent-error);
+	color: var(--accent-error);
+}
+
+.alertify-log-success {
+	background: var(--success-soft);
+	border-color: var(--accent-success);
+	color: var(--accent-success);
+}
+
+/* Keyboard focus ring */
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+	outline: 2px solid var(--accent-primary);
+	outline-offset: 1px;
 }
 
 /* Responsive Design */
@@ -204,7 +251,7 @@ input[type="number"]:focus {
 	}
 
 	.options-header h1 {
-		font-size: 1.5em;
+		font-size: 1.3em;
 	}
 
 	.option-row {
