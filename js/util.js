@@ -399,8 +399,13 @@ function refreshTree(callback) {
 
 		var results = [];
 
-		iterator(tree[0].children[0].children);	// bookmarks
-		iterator(tree[0].children[1].children);	// otherBookmarks
+		// Guard the tree shape: on a cold start the bookmark roots can be
+		// absent/incomplete. An exception here used to abort before
+		// callback() below, so the popup stayed on the empty HTML skeleton.
+		var roots = (tree && tree[0] && tree[0].children) || [];
+
+		if (roots[0] && roots[0].children) iterator(roots[0].children);	// bookmarks
+		if (roots[1] && roots[1].children) iterator(roots[1].children);	// otherBookmarks
 		function iterator(tree) {
 			var length = tree.length;
 			for (var i = 0; i < length; i++) {
@@ -417,8 +422,14 @@ function refreshTree(callback) {
 
 		bmp.bookmarkData = results;
 
-		refreshAll();
-
+		// refreshAll() is a no-op while bmp.initialized is false, but keep
+		// the first-paint callback independent of it: an exception here used
+		// to skip callback() entirely and freeze the popup on the skeleton.
+		try {
+			refreshAll();
+		} catch (e) {
+			console.error('[BMP] refreshAll failed', e);
+		}
 
 		// sometimes callback is not a function when invoked by system.
 		// callback is handled before queue events.
@@ -1332,7 +1343,16 @@ function getFrameWidth(targetFrame) {
 		targetFrame = bmp.currFrame;
 	}
 
-	return $(targetFrame).outerWidth();
+	var width = $(targetFrame).outerWidth();
+	// The first-paint guard in popup.html keeps #left-frame hidden until
+	// init() finishes, so outerWidth() is 0 while init() measures it.
+	// Fall back to the CSS geometry instead of writing a 0px max-width
+	// onto the hierarchy breadcrumb (append-view recomputes it later).
+	if (!width && targetFrame == '#left-frame') {
+		width = parseFloat(getComputedStyle(document.documentElement)
+			.getPropertyValue('--split-left')) || getSplitMetrics().popupWidth;
+	}
+	return width;
 }
 
 function getFrameHeight() {

@@ -15,6 +15,35 @@
 	<link rel="stylesheet" href="css/switch.css">
 	<link rel="stylesheet" href="css/default.css">
 	<link rel="stylesheet" href="css/toolbar-theme.css">
+
+	<!-- First-paint guard: defer scripts deliberately let the raw HTML
+	     skeleton paint before ~550KB of JS is parsed. Everything that
+	     init() only hides at init.js:2964 must therefore be hidden by CSS
+	     too, otherwise a cold start flashes the context menu, the empty
+	     left frame and the separator (the "broken" screenshot).
+	     default.css:517 already tries this for overlays, but its .menu
+	     rule is overridden by default.css:856 (.menu{display:inline-block})
+	     and #left-frame / #separator were never listed there at all.
+	     This inline style block comes after every stylesheet link, so
+	     it wins the cascade. JS still shows these with .show() / .show(250), which
+	     write an inline display and therefore override it.
+	     Kept here (not in default.css) so preview.html, which renders
+	     these elements on purpose as a static mock, is unaffected.
+	     #view-hide is excluded on purpose: util.js toggles it with an
+	     inline display and expects the CSS default to be visible. -->
+	<style>
+		.menu,
+		.dialog,
+		.window,
+		#modal-cover,
+		#action-hover-toolset,
+		#search-history,
+		#left-frame,
+		#separator {
+			display: none;
+		}
+	</style>
+
 	<!-- defer: scripts run in order after HTML parsing, so the themed
 	     skeleton paints without waiting for ~550KB of JS to parse -->
 	<script defer src="lib/jquery/jquery-1.12.4.min.js"></script>
